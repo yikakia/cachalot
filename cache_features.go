@@ -24,7 +24,7 @@ func (b *Builder[T]) WithCodec(codec codec.Codec) *Builder[T] {
 // 开启逻辑过期功能
 func (b *Builder[T]) WithLogicTTLEnabled(enabled bool) *Builder[T] {
 	b.features.logicTTLEnabled = enabled
-	return nil
+	return b
 }
 
 // 默认设置的逻辑过期时间
