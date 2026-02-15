@@ -31,7 +31,7 @@ type MultiBuilder[T any] struct {
 // FetchPolicy = multicache.FetchPolicySequential 顺序遍历 cache 获取，source 兜底 需要调用 MultiBuilder.WithLoader 提供回源函数
 // WriteBackCacheFilter = multicache.MissedCacheFilter 仅回源返回 cache.ErrNotFound 的 cache
 // WriteBackFn = multicache.WriteBackParallel[T](time.Minute) 并行写回，同步等待，写回的ttl为一分钟
-// ErrorHandleMode = multicache.ErrorHandleStrict 严格模式 当 WriteBackFn 返回 err 时，Get 也直接返回 err
+// ErrorHandleMode = multicache.ErrorHandleTolerant 宽容模式 当 WriteBackFn 返回 err 时，仅记录日志
 func NewMultiBuilder[T any](name string, caches ...cache.Cache[T]) *MultiBuilder[T] {
 	mb := &MultiBuilder[T]{
 		name:                 name,
@@ -45,7 +45,7 @@ func NewMultiBuilder[T any](name string, caches ...cache.Cache[T]) *MultiBuilder
 			FetchPolicy:          multicache.FetchPolicySequential[T],
 			WriteBackCacheFilter: multicache.MissedCacheFilter[T],
 			WriteBackFn:          multicache.WriteBackParallel[T](time.Minute),
-			ErrorHandleMode:      multicache.ErrorHandleStrict,
+			ErrorHandleMode:      multicache.ErrorHandleTolerant,
 		},
 	}
 
@@ -86,8 +86,8 @@ func (b *MultiBuilder[T]) WithErrorHandling(mode multicache.ErrorHandleMode) *Mu
 	return b
 }
 
-// WithSingleflight 禁用 LoaderFn 的 singleflight 封装
-func (b *MultiBuilder[T]) WithSingleflight(enabled bool) *MultiBuilder[T] {
+// WithSingleflightLoader LoaderFn 的 singleflight 封装 默认开启
+func (b *MultiBuilder[T]) WithSingleflightLoader(enabled bool) *MultiBuilder[T] {
 	b.singleFlight = enabled
 	return b
 }
