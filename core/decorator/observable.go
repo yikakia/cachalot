@@ -6,6 +6,7 @@ import (
 
 	"github.com/yikakia/cachalot/core/cache"
 	"github.com/yikakia/cachalot/core/telemetry"
+	"github.com/yikakia/cachalot/internal"
 )
 
 func NewObservableDecorator[T any](
@@ -44,7 +45,7 @@ func (o *ObservableDecorator[T]) Get(ctx context.Context, key string, opts ...ca
 	defer func() {
 		evt.Error = finalErr
 		evt.Latency = time.Since(start)
-		evt.Result = telemetry.ResultFromErr(finalErr, cache.ErrNotFound)
+		evt.Result = internal.ResultFromErr(finalErr)
 
 		err := o.ob.Metrics.Record(ctx, evt)
 		if err != nil {
@@ -86,7 +87,7 @@ func (o *ObservableDecorator[T]) GetWithTTL(ctx context.Context, key string, opt
 	defer func() {
 		evt.Error = finalErr
 		evt.Latency = time.Since(start)
-		evt.Result = telemetry.ResultFromErr(finalErr, cache.ErrNotFound)
+		evt.Result = internal.ResultFromErr(finalErr)
 
 		err := o.ob.Metrics.Record(ctx, evt)
 		if err != nil {

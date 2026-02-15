@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"errors"
 	"maps"
 	"sync"
 	"time"
@@ -21,20 +20,18 @@ func AddCustomFields(ctx context.Context, fields map[string]string) {
 		return
 	}
 	e := value.(*Event)
+	m := e.getOrInitCustomFields()
+
 	e.mu.Lock()
 	defer e.mu.Unlock()
-
-	for k, v := range fields {
-		e.getOrInitCustomFields()[k] = v
-	}
+	maps.Copy(m, fields)
 }
 
 type eventKey struct{}
 
 type Event struct {
 	Op Op
-	// Get GetWithTTL 的结果 hit miss fail
-	// 可以使用 ResultFromErr 进行简单转换
+	// 当接口为 Get GetWithTTL 时有值 hit miss fail 其他接口置空
 	Result    Result
 	CacheName string
 	StoreName string
@@ -42,20 +39,21 @@ type Event struct {
 	Error     error // 最后拿到的err
 
 	mu           sync.Mutex
+	fieldOnce    sync.Once
 	customFields map[string]string
 }
 
 func (e *Event) getOrInitCustomFields() map[string]string {
-	if e.customFields == nil {
-		e.customFields = map[string]string{}
-	}
+	e.fieldOnce.Do(func() {
+		e.customFields = make(map[string]string)
+	})
 	return e.customFields
 }
 
 func (e *Event) FrozenCustomFields() map[string]string {
+	c := e.getOrInitCustomFields()
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	c := e.getOrInitCustomFields()
 	return maps.Clone(c)
 }
 
@@ -76,15 +74,3 @@ const (
 	ResultMiss = "miss"
 	ResultFail = "fail"
 )
-
-// ResultFromErr 提供自定义的 notFoundErr 将err转化为result
-func ResultFromErr(err error, notFoundErr error) Result {
-	switch {
-	case err == nil:
-		return ResultHit
-	case errors.Is(err, notFoundErr):
-		return ResultMiss
-	default:
-		return ResultFail
-	}
-}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/yikakia/cachalot/core/cache"
 	"github.com/yikakia/cachalot/core/telemetry"
+	"github.com/yikakia/cachalot/internal"
 )
 
 type observableDecorator[T any] struct {
@@ -28,7 +29,7 @@ func (d *observableDecorator[T]) Get(ctx context.Context, key string, opts ...ca
 		CacheName: d.name,
 	}
 	defer func() {
-		evt.Result = telemetry.ResultFromErr(err, cache.ErrNotFound)
+		evt.Result = internal.ResultFromErr(err)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
@@ -44,7 +45,6 @@ func (d *observableDecorator[T]) Set(ctx context.Context, key string, val T, ttl
 		CacheName: d.name,
 	}
 	defer func() {
-		evt.Result = telemetry.ResultFromErr(err, nil)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
@@ -60,7 +60,6 @@ func (d *observableDecorator[T]) Delete(ctx context.Context, key string, opts ..
 		CacheName: d.name,
 	}
 	defer func() {
-		evt.Result = telemetry.ResultFromErr(err, nil)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
@@ -76,7 +75,6 @@ func (d *observableDecorator[T]) Clear(ctx context.Context) (err error) {
 		CacheName: d.name,
 	}
 	defer func() {
-		evt.Result = telemetry.ResultFromErr(err, nil)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
@@ -92,7 +90,7 @@ func (d *observableDecorator[T]) FetchByLoader(ctx context.Context, key string) 
 		CacheName: d.name,
 	}
 	defer func() {
-		evt.Result = telemetry.ResultFromErr(err, nil)
+		evt.Result = internal.ResultFromErr(err)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
