@@ -23,8 +23,13 @@ type features[T any] struct {
 
 	// 逻辑过期特有的配置项
 	logicTTLEnabled bool
+	// 默认一分钟
 	defaultLogicTTL time.Duration
-	writeBackTTL    time.Duration
+	// 默认两分钟
+	writeBackTTL time.Duration
+
+	// cacheMissLoader
+	cacheMissLoader bool
 
 	// 回源函数 非必须
 	loadFn decorator.LoadFn[T]
