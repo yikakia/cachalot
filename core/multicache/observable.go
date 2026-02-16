@@ -19,6 +19,7 @@ func newObservableDecorator[T any](name string, inner MultiCache[T], ob *telemet
 	return &observableDecorator[T]{
 		MultiCache: inner,
 		ob:         ob,
+		name:       name,
 	}
 }
 
@@ -34,6 +35,7 @@ func (d *observableDecorator[T]) Get(ctx context.Context, key string, opts ...ca
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
 	}()
+	ctx = telemetry.ContextWithEvent(ctx, evt)
 
 	return d.MultiCache.Get(ctx, key, opts...)
 }
@@ -49,6 +51,7 @@ func (d *observableDecorator[T]) Set(ctx context.Context, key string, val T, ttl
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
 	}()
+	ctx = telemetry.ContextWithEvent(ctx, evt)
 
 	return d.MultiCache.Set(ctx, key, val, ttl, opts...)
 }
@@ -64,6 +67,7 @@ func (d *observableDecorator[T]) Delete(ctx context.Context, key string, opts ..
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
 	}()
+	ctx = telemetry.ContextWithEvent(ctx, evt)
 
 	return d.MultiCache.Delete(ctx, key, opts...)
 }
@@ -79,6 +83,7 @@ func (d *observableDecorator[T]) Clear(ctx context.Context) (err error) {
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
 	}()
+	ctx = telemetry.ContextWithEvent(ctx, evt)
 
 	return d.MultiCache.Clear(ctx)
 }
@@ -95,6 +100,7 @@ func (d *observableDecorator[T]) FetchByLoader(ctx context.Context, key string) 
 		evt.Latency = time.Since(startTime)
 		_ = d.ob.Metrics.Record(ctx, evt)
 	}()
+	ctx = telemetry.ContextWithEvent(ctx, evt)
 
 	return d.MultiCache.FetchByLoader(ctx, key)
 }

@@ -1,6 +1,7 @@
 package cachalot
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/yikakia/cachalot/core/cache"
@@ -22,29 +23,47 @@ func (b *Builder[T]) WithCodec(codec codec.Codec) *Builder[T] {
 }
 
 // 开启逻辑过期功能
-func (b *Builder[T]) WithLogicTTLEnabled(enabled bool) *Builder[T] {
-	b.features.logicTTLEnabled = enabled
+func (b *Builder[T]) WithLogicExpireEnabled(enabled bool) *Builder[T] {
+	b.features.logicExpire.enabled = enabled
 	return b
 }
 
 // 默认设置的逻辑过期时间
-func (b *Builder[T]) WithDefaultLogicTTL(d time.Duration) *Builder[T] {
-	b.features.logicTTLEnabled = true
-	b.features.defaultLogicTTL = d
+// 需要大于等于0
+func (b *Builder[T]) WithLogicExpireDefaultLogicTTL(d time.Duration) *Builder[T] {
+	b.features.logicExpire.enabled = true
+	b.features.logicExpire.defaultLogicTTL = d
+	if d < 0 {
+		b.appendErr(fmt.Errorf("logicExpireDefaultLogicTTL must >= 0, but got %v", d))
+	}
 	return b
 }
 
 // 逻辑过期回源后，回写时的物理过期时间
-func (b *Builder[T]) WithWriteBackTTL(d time.Duration) *Builder[T] {
-	b.features.logicTTLEnabled = true
-	b.features.writeBackTTL = d
+// 需要大于等于0
+func (b *Builder[T]) WithLogicExpireDefaultWriteBackTTL(d time.Duration) *Builder[T] {
+	b.features.logicExpire.enabled = true
+	b.features.logicExpire.defaultWriteBackTTL = d
+	if d < 0 {
+		b.appendErr(fmt.Errorf("logicExpireDefaultWriteBackTTL must >= 0, but got: %v", d))
+	}
 	return b
 }
 
-// 逻辑过期和缓存不存在加载都可能调用
-// 需要手动使用 WithLogicTTLEnabled(true) 启用该功能
-func (b *Builder[T]) WithLoadFn(fn decorator.LoadFn[T]) *Builder[T] {
-	b.features.loadFn = fn
+func (b *Builder[T]) WithLogicExpireLoader(fn decorator.LoaderFn[T]) *Builder[T] {
+	b.features.logicExpire.enabled = true
+	b.features.logicExpire.loadFn = fn
+	return b
+}
+
+func (b *Builder[T]) WithCacheMissLoader(fn decorator.LoaderFn[T]) *Builder[T] {
+	b.features.missLoader.loadFn = fn
+	return b
+}
+
+// 如果不调用 WithCacheMissLoader 传入回源函数的话 此设置无效
+func (b *Builder[T]) WithCacheMissDefaultWriteBackTTL(d time.Duration) *Builder[T] {
+	b.features.missLoader.defaultWriteBackTTL = d
 	return b
 }
 

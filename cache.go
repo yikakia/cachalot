@@ -22,17 +22,23 @@ type features[T any] struct {
 	codec codec.Codec
 
 	// 逻辑过期特有的配置项
-	logicTTLEnabled bool
-	// 默认一分钟
-	defaultLogicTTL time.Duration
-	// 默认两分钟
-	writeBackTTL time.Duration
+	logicExpire struct {
+		enabled bool
+		// 默认十分钟逻辑过期
+		defaultLogicTTL time.Duration
+		// 回源函数 非必须
+		loadFn decorator.LoaderFn[T]
+		// 回源后写回缓存 默认一小时的物理过期时间
+		defaultWriteBackTTL time.Duration
+	}
 
-	// cacheMissLoader
-	cacheMissLoader bool
-
-	// 回源函数 非必须
-	loadFn decorator.LoadFn[T]
+	// cacheMissLoader 独有的配置
+	missLoader struct {
+		// 缓存过期后如何回源
+		loadFn decorator.LoaderFn[T]
+		// 回源后写回缓存，默认一小时过期
+		defaultWriteBackTTL time.Duration
+	}
 }
 
 func NewBuilder[T any](name string, store cache.Store, opts ...cache.Option[T]) (*Builder[T], error) {
@@ -48,6 +54,13 @@ func NewBuilder[T any](name string, store cache.Store, opts ...cache.Option[T]) 
 		store:     store,
 		features: features[T]{
 			singleFlight: true,
+			missLoader: struct {
+				loadFn              decorator.LoaderFn[T]
+				defaultWriteBackTTL time.Duration
+			}{
+				loadFn:              nil,
+				defaultWriteBackTTL: 0,
+			},
 		},
 		factory: cache.WithSimpleFactory(func(store cache.Store) (cache.Cache[T], error) {
 			return cache.NewBaseCache[T](store), nil
@@ -59,6 +72,11 @@ func NewBuilder[T any](name string, store cache.Store, opts ...cache.Option[T]) 
 		logger:  telemetry.SlogLogger(),
 		options: opts,
 	}
+
+	b.features.logicExpire.defaultLogicTTL = 10 * time.Minute
+	b.features.logicExpire.defaultWriteBackTTL = time.Hour
+
+	b.features.missLoader.defaultWriteBackTTL = time.Hour
 
 	return b, nil
 }
@@ -88,6 +106,7 @@ type Builder[T any] struct {
 
 func (b *Builder[T]) Build() (cache.Cache[T], error) {
 	b.buildFactory()
+	b.decorateCacheMissedLoader()
 	b.decorateSingleflight()
 	if b.err != nil {
 		return nil, fmt.Errorf("builder configs wrong: %w", b.err)
@@ -116,7 +135,7 @@ func (b *Builder[T]) appendErr(err error) {
 
 func (b *Builder[T]) buildFactory() {
 	// 不开启任何特性
-	if !b.features.logicTTLEnabled && b.features.codec == nil {
+	if !b.features.logicExpire.enabled && b.features.codec == nil {
 		// 兜底配置
 		if b.factory == nil {
 			b.factory = cache.WithSimpleFactory(func(store cache.Store) (cache.Cache[T], error) {
@@ -128,12 +147,15 @@ func (b *Builder[T]) buildFactory() {
 
 	// 现在是多 feature 的组合 如果已经有了实现 此时应该再次报错兜底
 	if b.factoryCustomized {
-		b.appendErr(fmt.Errorf("[Builder.buildFactory] already initialized while feature ttlEnabled:%v, codecEnabled:%v", b.features.logicTTLEnabled, b.features.codec != nil))
+		b.appendErr(fmt.Errorf("[Builder.buildFactory] already initialized while feature ttlEnabled:%v, codecEnabled:%v", b.features.logicExpire.enabled, b.features.codec != nil))
 		return
 	}
 
 	switch {
-	case b.features.logicTTLEnabled && b.features.codec == nil:
+	case b.features.logicExpire.enabled && b.features.codec == nil:
+		if !b.checkTTLConfigValid() {
+			return
+		}
 		// 仅logic
 		b.factory = cache.WithFactory(func(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
 			c := cache.NewBaseCache[decorator.LogicTTLValue[T]](store)
@@ -141,7 +163,10 @@ func (b *Builder[T]) buildFactory() {
 			return decorator.NewLogicTTLDecorator(cfg), nil
 		})
 		return
-	case b.features.logicTTLEnabled && b.features.codec != nil:
+	case b.features.logicExpire.enabled && b.features.codec != nil:
+		if !b.checkTTLConfigValid() {
+			return
+		}
 		// logic && codec
 		b.factory = cache.WithFactory(func(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
 			base := cache.NewBaseCache[[]byte](store)
@@ -160,21 +185,31 @@ func (b *Builder[T]) buildFactory() {
 	}
 }
 
+func (b *Builder[T]) checkTTLConfigValid() bool {
+	if ttl := b.features.logicExpire.defaultLogicTTL; ttl < 0 {
+		b.appendErr(fmt.Errorf("logicExpire.defaultLogicTTL require >= 0 but got:%v", ttl))
+		return false
+	}
+	if ttl := b.features.logicExpire.defaultWriteBackTTL; ttl < 0 {
+		b.appendErr(fmt.Errorf("logicExpire.defaultWriteBackTTL require >= 0 but got:%v", ttl))
+		return false
+	}
+
+	return true
+}
+
 func (b *Builder[T]) buildTTLConfig(next cache.Cache[decorator.LogicTTLValue[T]], ob *telemetry.Observable) decorator.LogicTTLDecoratorConfig[T] {
+	loadFn := b.features.logicExpire.loadFn
+	if loadFn != nil {
+		loadFn = decorator.SingleflightWrapper(loadFn)
+	}
 	// 校验并配置默认值
 	d := decorator.LogicTTLDecoratorConfig[T]{
 		Cache:           next,
-		DefaultLogicTTL: time.Minute,
-		LoadFn:          b.features.loadFn,
-		WriteBackTTL:    2 * time.Minute,
+		DefaultLogicTTL: b.features.logicExpire.defaultLogicTTL,
+		LoadFn:          loadFn,
+		WriteBackTTL:    b.features.logicExpire.defaultWriteBackTTL,
 		Observer:        ob,
-	}
-
-	if b.features.defaultLogicTTL > 0 {
-		d.DefaultLogicTTL = b.features.defaultLogicTTL
-	}
-	if b.features.writeBackTTL > 0 {
-		d.WriteBackTTL = b.features.writeBackTTL
 	}
 
 	return d
@@ -191,6 +226,30 @@ func (b *Builder[T]) decorateSingleflight() {
 			}, nil
 		}))
 	}
+}
+
+func (b *Builder[T]) decorateCacheMissedLoader() {
+	loadFn := b.features.missLoader.loadFn
+	if loadFn == nil {
+		return
+	}
+
+	writeBackTTL := b.features.missLoader.defaultWriteBackTTL
+	if writeBackTTL < 0 {
+		b.appendErr(fmt.Errorf("writeBackTTL require >= 0, but got: %v", writeBackTTL))
+		return
+	}
+
+	wrappedFn := decorator.SingleflightWrapper[T](loadFn)
+	b.decorators = append(b.decorators, cache.WithDecorator(func(c cache.Cache[T], ob *telemetry.Observable) (cache.Cache[T], error) {
+
+		return decorator.NewMissedLoaderDecorator(decorator.MissedLoaderDecoratorConfig[T]{
+			Cache:        c,
+			LoadFn:       wrappedFn,
+			WriteBackTTL: writeBackTTL,
+			Observer:     ob,
+		}), nil
+	}))
 }
 
 func newCodecDecorator[T any](next cache.Cache[[]byte], codec codec.Codec) *decorator.CodecDecorator[T] {

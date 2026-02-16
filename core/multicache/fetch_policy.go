@@ -3,8 +3,10 @@ package multicache
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/yikakia/cachalot/core/cache"
+	"github.com/yikakia/cachalot/core/telemetry"
 )
 
 type FetchContext[T any] struct {
@@ -28,11 +30,13 @@ type FailedCache[T any] struct {
 func FetchPolicySequential[T any](ctx context.Context, getCtx *FetchContext[T]) (T, []FailedCache[T], error) {
 	var zero T
 	var failedCaches []FailedCache[T]
+	tags := map[string]string{}
+	defer telemetry.AddCustomFields(ctx, tags)
 
 	m := getCtx.Cache
 	key := getCtx.Key
 	// 从缓存中加载
-	for _, cache := range m.Caches() {
+	for i, cache := range m.Caches() {
 		val, err := cache.Get(ctx, key, getCtx.Options...)
 		if err != nil {
 			failedCaches = append(failedCaches, FailedCache[T]{
@@ -41,6 +45,7 @@ func FetchPolicySequential[T any](ctx context.Context, getCtx *FetchContext[T]) 
 			})
 			continue
 		}
+		tags["source"] = "cache_" + strconv.Itoa(i)
 		return val, failedCaches, nil
 	}
 
@@ -51,5 +56,6 @@ func FetchPolicySequential[T any](ctx context.Context, getCtx *FetchContext[T]) 
 		return zero, nil, fmt.Errorf("[FetchPolicySequential] get from source failed: %w", err)
 	}
 
+	tags["source"] = "loader"
 	return val, failedCaches, nil
 }

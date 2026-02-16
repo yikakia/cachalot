@@ -14,12 +14,11 @@ type LogicTTLMetrics interface {
 	RecordLogicExpire(ctx context.Context)
 }
 
-type LoadFn[T any] func(ctx context.Context, key string) (T, error)
 type LogicTTLDecoratorConfig[T any] struct {
 	Cache           cache.Cache[LogicTTLValue[T]]
 	DefaultLogicTTL time.Duration
 	// 当逻辑过期后，提供回源函数
-	LoadFn LoadFn[T]
+	LoadFn LoaderFn[T]
 	// 当设置了回源函数时，回写时的物理过期时间
 	WriteBackTTL time.Duration
 

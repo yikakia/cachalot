@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/yikakia/cachalot/core/cache"
+	"github.com/yikakia/cachalot/core/decorator"
 	"github.com/yikakia/cachalot/core/multicache"
 	"github.com/yikakia/cachalot/core/telemetry"
 )
@@ -57,7 +58,7 @@ func NewMultiBuilder[T any](name string, caches ...cache.Cache[T]) *MultiBuilder
 
 // WithLoader 设置回源函数
 // 默认配置 FetchPolicy = multicache.FetchPolicySequential 时必传 不然会运行时 panic
-func (b *MultiBuilder[T]) WithLoader(fn multicache.LoaderFn[T]) *MultiBuilder[T] {
+func (b *MultiBuilder[T]) WithLoader(fn decorator.LoaderFn[T]) *MultiBuilder[T] {
 	b.cfg.LoaderFn = fn
 	return b
 }
@@ -119,8 +120,8 @@ func (b *MultiBuilder[T]) Build() (multicache.MultiCache[T], error) {
 	}
 
 	finalCfg := b.cfg
-	if !b.singleFlight {
-		finalCfg.LoaderFn = multicache.SingleflightWrapper(finalCfg.LoaderFn)
+	if b.singleFlight {
+		finalCfg.LoaderFn = decorator.SingleflightWrapper(finalCfg.LoaderFn)
 	}
 
 	finalCfg.Observable = &telemetry.Observable{

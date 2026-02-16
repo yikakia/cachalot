@@ -13,7 +13,7 @@ var _ cache.Cache[any] = (*SingleflightDecorator[any])(nil)
 
 // SingleflightDecorator[T] 使用 singleflight 包装 Cache[T] 的 Get 操作
 // 如果启用了观测，则会在 Get GetWithTTL 中注入
-// sf  true,false 标明该请求是否是shared
+// shared  true,false 标明该请求是否是shared
 type SingleflightDecorator[T any] struct {
 	Cache cache.Cache[T]
 	Group *singleflight.Group
@@ -33,10 +33,10 @@ func (s *SingleflightDecorator[T]) Get(ctx context.Context, key string, opts ...
 
 func (s *SingleflightDecorator[T]) addTags(ctx context.Context, shared bool) {
 	tags := map[string]string{
-		"sf": "true",
+		"shared": "true",
 	}
 	if shared {
-		tags["sf"] = "false"
+		tags["shared"] = "false"
 	}
 
 	telemetry.AddCustomFields(ctx, tags)
