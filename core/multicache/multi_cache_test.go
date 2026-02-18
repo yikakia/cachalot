@@ -2,11 +2,15 @@ package multicache
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"github.com/yikakia/cachalot/core/cache"
+	"github.com/yikakia/cachalot/core/cache/mocks"
 	"github.com/yikakia/cachalot/core/telemetry"
+	"go.uber.org/mock/gomock"
 )
 
 type mockMetrics struct {
@@ -18,59 +22,22 @@ func (m *mockMetrics) Record(ctx context.Context, e *telemetry.Event) error {
 	return nil
 }
 
-type mockCache struct {
-	val string
-	err error
-}
-
-func (m *mockCache) Get(ctx context.Context, key string, opts ...cache.CallOption) (string, error) {
-	if m.err != nil {
-		return "", m.err
-	}
-	return m.val, nil
-}
-
-func (m *mockCache) Set(ctx context.Context, key string, val string, ttl time.Duration, opts ...cache.CallOption) error {
-	return m.err
-}
-
-func (m *mockCache) GetWithTTL(ctx context.Context, key string, opts ...cache.CallOption) (string, time.Duration, error) {
-	if m.err != nil {
-		return "", 0, m.err
-	}
-	// Return a dummy TTL
-	return m.val, time.Minute, nil
-}
-
-func (m *mockCache) Delete(ctx context.Context, key string, opts ...cache.CallOption) error {
-	return m.err
-}
-
-func (m *mockCache) Clear(ctx context.Context) error {
-	return m.err
-}
-
-func (m *mockCache) Close() error { return nil }
-
 func TestMultiCacheTelemetry(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	ctx := context.Background()
 	metrics := &mockMetrics{}
-	ob := &telemetry.Observable{
-		Metrics: metrics,
-		Logger:  telemetry.SlogLogger(), // or mock logger if needed
-	}
+	ob := &telemetry.Observable{Metrics: metrics, Logger: telemetry.SlogLogger()}
 
-	c1 := &mockCache{val: "value1"}
-
-	// Create MultiCache manually since we are in `package multicache` and can access `New`
-	// But `New` takes `Config`.
-	// Let's use `New` directly to test `MultiCache` logic, as `MultiBuilder` is in `cachalot` package (circular dependency if we use it here?)
-	// `MultiBuilder` is in `d:\codes\cachalot\multi_cache.go` (package `cachalot`).
-	// `MultiCache` is in `d:\codes\cachalot\core\multicache\multi_cache.go` (package `multicache`).
-	// We are testing `core/multicache`.
+	c1 := mocks.NewMockCache[string](ctrl)
+	c1.EXPECT().Get(gomock.Any(), "key").Return("value1", nil)
+	c1.EXPECT().Set(gomock.Any(), "key", "val", time.Minute).Return(nil)
+	c1.EXPECT().Delete(gomock.Any(), "key").Return(nil)
+	c1.EXPECT().Clear(gomock.Any()).Return(nil)
 
 	cfg := Config[string]{
 		Observable: ob,
-		// minimal config
 		FetchPolicy: func(ctx context.Context, ctx2 *FetchContext[string]) (string, []FailedCache[string], error) {
 			val, err := ctx2.Cache.Caches()[0].Get(ctx, ctx2.Key)
 			if err != nil {
@@ -87,49 +54,60 @@ func TestMultiCacheTelemetry(t *testing.T) {
 	}
 
 	mc, err := New("cache", cfg, c1)
-	if err != nil {
-		t.Fatalf("New failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	ctx := context.Background()
-
-	// Test Get
 	_, _ = mc.Get(ctx, "key")
-	if len(metrics.events) != 1 {
-		t.Errorf("Expected 1 event, got %d", len(metrics.events))
-	} else {
-		if metrics.events[0].Op != telemetry.OpGet {
-			t.Errorf("Expected OpGet, got %v", metrics.events[0].Op)
+	require.Len(t, metrics.events, 1)
+	require.Equal(t, telemetry.OpGet, metrics.events[0].Op)
+
+	require.NoError(t, mc.Set(ctx, "key", "val", time.Minute))
+	require.Len(t, metrics.events, 2)
+	require.Equal(t, telemetry.OpSet, metrics.events[1].Op)
+
+	require.NoError(t, mc.Delete(ctx, "key"))
+	require.Len(t, metrics.events, 3)
+	require.Equal(t, telemetry.OpDelete, metrics.events[2].Op)
+
+	require.NoError(t, mc.Clear(ctx))
+	require.Len(t, metrics.events, 4)
+	require.Equal(t, telemetry.OpClear, metrics.events[3].Op)
+}
+
+func TestMultiCacheGetWriteBackErrorHandling(t *testing.T) {
+	ctx := context.Background()
+	writeBackErr := errors.New("write back failed")
+
+	newConfig := func(mode ErrorHandleMode) Config[string] {
+		return Config[string]{
+			Observable: &telemetry.Observable{Metrics: telemetry.NoopMetrics(), Logger: telemetry.SlogLogger()},
+			FetchPolicy: func(ctx context.Context, ctx2 *FetchContext[string]) (string, []FailedCache[string], error) {
+				return "from-l2", []FailedCache[string]{{Err: errors.New("l1 miss")}}, nil
+			},
+			WriteBackCacheFilter: func(ctx context.Context, ctx2 *FetchContext[string], failed []FailedCache[string]) []cache.Cache[string] {
+				return nil
+			},
+			WriteBackFn: func(ctx context.Context, ctx2 *FetchContext[string], caches []cache.Cache[string]) error {
+				return writeBackErr
+			},
+			ErrorHandleMode: mode,
 		}
 	}
 
-	// Test Set
-	_ = mc.Set(ctx, "key", "val", time.Minute)
-	if len(metrics.events) != 2 {
-		t.Errorf("Expected 2 events, got %d", len(metrics.events))
-	} else {
-		if metrics.events[1].Op != telemetry.OpSet {
-			t.Errorf("Expected OpSet, got %v", metrics.events[1].Op)
-		}
-	}
+	t.Run("tolerant mode returns value and hides write back error", func(t *testing.T) {
+		mc, err := New("cache", newConfig(ErrorHandleTolerant))
+		require.NoError(t, err)
 
-	// Test Delete
-	_ = mc.Delete(ctx, "key")
-	if len(metrics.events) != 3 {
-		t.Errorf("Expected 3 events, got %d", len(metrics.events))
-	} else {
-		if metrics.events[2].Op != telemetry.OpDelete {
-			t.Errorf("Expected OpDelete, got %v", metrics.events[2].Op)
-		}
-	}
+		v, err := mc.Get(ctx, "k")
+		require.NoError(t, err)
+		require.Equal(t, "from-l2", v)
+	})
 
-	// Test Clear
-	_ = mc.Clear(ctx)
-	if len(metrics.events) != 4 {
-		t.Errorf("Expected 4 events, got %d", len(metrics.events))
-	} else {
-		if metrics.events[3].Op != telemetry.OpClear {
-			t.Errorf("Expected OpClear, got %v", metrics.events[3].Op)
-		}
-	}
+	t.Run("strict mode returns write back error", func(t *testing.T) {
+		mc, err := New("cache", newConfig(ErrorHandleStrict))
+		require.NoError(t, err)
+
+		v, err := mc.Get(ctx, "k")
+		require.ErrorIs(t, err, writeBackErr)
+		require.Equal(t, "", v)
+	})
 }
