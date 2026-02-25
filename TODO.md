@@ -1,0 +1,5 @@
+- [ ] 提高单测覆盖 > 70%
+- [ ] Impl interceptor as a decorator for easy log & metric
+- [ ] 添加 benchmark 分析接入了多层封装后的性能影响
+- [ ] 引入 CI 对于 redis 使用实际的 docker 进行测试，添加 go:build xxx 标签仅用于集成测试
+- [ ] 支持更多缓存库的接入
