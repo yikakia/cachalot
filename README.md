@@ -16,8 +16,23 @@ It is not a specific cache system, but rather abstracts common caching patterns 
 
 ## Project Status
 
-This project is currently focused on gathering early feedback, and the API is not frozen yet.
-Before the first stable release, APIs and default behaviors may still change.
+This project is currently focused on gathering early feedback and is **not production-ready yet**.
+The API is not frozen, and APIs/default behaviors may still change before the first stable release.
+Feedback is highly welcome on:
+
+- API naming and semantics.
+- Usage ergonomics in real service flows.
+- Default strategy implementations (fetch/write-back/singleflight).
+- Extension experience for custom store/factory/decorator integrations.
+
+## Comparison with eko/gocache
+
+Both `cachalot` and `eko/gocache` aim to simplify cache access, but they optimize for different things:
+
+- `eko/gocache` focuses on a unified facade with ready-to-use adapters for fast adoption.
+- `cachalot` focuses on structured layering with explicit `Store`, `Factory`, and `Decorator` boundaries.
+
+This separation makes it easier to compose features by evolving storage implementation, construction/type-bridging logic, and usage policies independently.
 
 ## Features
 
@@ -26,11 +41,6 @@ Before the first stable release, APIs and default behaviors may still change.
 - Decorator-based capability orchestration (codec, logical expiry, singleflight, miss loader).
 - Unified observability (metrics + logger).
 - Both high-level Builder API (out-of-the-box usage) and low-level core API (fine-grained orchestration).
-
-## Project status
-
-This project is currently focused on gathering early feedback, and the API is not frozen yet.
-Before the first stable release, APIs and default behaviors may still change.
 
 ## Install
 
