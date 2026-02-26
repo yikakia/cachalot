@@ -38,7 +38,7 @@ This separation makes it easier to compose features by evolving storage implemen
 
 - Single-level cache with pluggable `Store` implementations.
 - Multi-level cache with customizable fetch and write-back policies.
-- Decorator-based capability orchestration (codec, logical expiry, singleflight, miss loader).
+- Decorator-based capability orchestration (codec, compression, logical expiry, singleflight, miss loader).
 - Unified observability (metrics + logger).
 - Both high-level Builder API (out-of-the-box usage) and low-level core API (fine-grained orchestration).
 
@@ -92,6 +92,7 @@ Common options:
 - `WithCacheMissDefaultWriteBackTTL`: Default write-back TTL after loader returns successfully.
 - `WithSingleFlight`: Merge concurrent requests.
 - `WithCodec`: Codec for byte-oriented stores.
+- `WithCompression`: Byte-stage compression/decompression.
 - `WithLogicExpire*`: Logical expiration (stale-while-revalidate).
 - `WithLogger` / `WithMetrics`: Observability integration.
 

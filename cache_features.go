@@ -84,6 +84,11 @@ func (b *Builder[T]) WithFactory(factory cache.CacheFactory[T]) *Builder[T] {
 	return b
 }
 
+// WithCustomPlan 显式声明使用自定义装配计划，与 staged features 互斥。
+func (b *Builder[T]) WithCustomPlan(factory cache.CacheFactory[T]) *Builder[T] {
+	return b.WithFactory(factory)
+}
+
 func (b *Builder[T]) WithLogger(logger telemetry.Logger) *Builder[T] {
 	b.logger = logger
 	return b
@@ -110,7 +115,7 @@ func (b *Builder[T]) WithDecorators(decorators ...cache.Decorator[T]) *Builder[T
 
 // WithOptions 自定义的可选项，优先级最高
 //
-// 如果传入 cache.WithFactory 则会覆盖 ttl 和 codec 相关特性
+// 如果传入 cache.WithFactory 则会覆盖 Builder 的装配计划
 // 如果传入 cache.WithObservable 则会覆盖 WithLogger 和 WithMetrics 的特性开启
 // 如果传入 cache.WithDecorator 则会在 WithDecorators 的外层，观测层的内层
 func (b *Builder[T]) WithOptions(opts ...cache.Option[T]) *Builder[T] {

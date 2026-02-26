@@ -1,8 +1,10 @@
 package cachalot
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/yikakia/cachalot/core/cache"
@@ -16,10 +18,12 @@ type features[T any] struct {
 	// enabled by default
 	singleFlight bool
 
-	// 当启用逻辑过期和codec任一特性时 如果再调用 factory 则会报错
-
-	// codec 特有的配置项
+	// codec 特有的配置项（默认类型适配器）
 	codec codec.Codec
+	// 用户自定义类型适配器（T <-> []byte）
+	typeAdapter TypeAdapter[T]
+	// 字节级转换链，例如压缩/加密
+	byteTransforms []ByteTransform
 
 	// 逻辑过期特有的配置项
 	logicExpire struct {
@@ -114,7 +118,7 @@ type Builder[T any] struct {
 }
 
 func (b *Builder[T]) Build() (cache.Cache[T], error) {
-	b.buildFactory()
+	b.compileStages()
 	b.decorateCacheMissedLoader()
 	b.decoratePenetrationProtection()
 	b.decorateSingleflight()
@@ -163,56 +167,113 @@ func (b *Builder[T]) appendErr(err error) {
 	b.err = errors.Join(b.err, err)
 }
 
-func (b *Builder[T]) buildFactory() {
-	// 不开启任何特性
-	if !b.features.logicExpire.enabled && b.features.codec == nil {
-		// 兜底配置
-		if b.factory == nil {
-			b.factory = cache.WithSimpleFactory(func(store cache.Store) (cache.Cache[T], error) {
-				return cache.NewBaseCache[T](store), nil
-			})
-		}
-		return
-	}
-
-	// 现在是多 feature 的组合 如果已经有了实现 此时应该再次报错兜底
+func (b *Builder[T]) compileStages() {
 	if b.factoryCustomized {
-		b.appendErr(fmt.Errorf("[Builder.buildFactory] already initialized while feature ttlEnabled:%v, codecEnabled:%v", b.features.logicExpire.enabled, b.features.codec != nil))
+		if b.hasStagedFeaturesEnabled() {
+			b.appendErr(errors.New("WithFactory cannot be combined with staged features (codec/logic-expire/compression/type-adapter), use WithCustomPlan or disable staged features"))
+		}
 		return
 	}
 
-	switch {
-	case b.features.logicExpire.enabled && b.features.codec == nil:
-		if !b.checkTTLConfigValid() {
-			return
-		}
-		// 仅logic
+	if b.features.logicExpire.enabled && !b.checkTTLConfigValid() {
+		return
+	}
+
+	if b.features.logicExpire.enabled {
 		b.factory = cache.WithFactory(func(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
-			c := cache.NewBaseCache[decorator.LogicTTLValue[T]](store)
-			cfg := b.buildTTLConfig(c, ob)
+			wire, err := b.buildLogicWireCache(store, ob)
+			if err != nil {
+				return nil, err
+			}
+			cfg := b.buildTTLConfig(wire, ob)
 			return decorator.NewLogicTTLDecorator(cfg), nil
 		})
 		return
-	case b.features.logicExpire.enabled && b.features.codec != nil:
-		if !b.checkTTLConfigValid() {
-			return
-		}
-		// logic && codec
-		b.factory = cache.WithFactory(func(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
-			base := cache.NewBaseCache[[]byte](store)
-			_codec := newCodecDecorator[decorator.LogicTTLValue[T]](base, b.features.codec)
-			cfg := b.buildTTLConfig(_codec, ob)
-			return decorator.NewLogicTTLDecorator(cfg), nil
-		})
-	case b.features.codec != nil:
-		b.factory = cache.WithFactory(func(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
-			base := cache.NewBaseCache[[]byte](store)
-			return newCodecDecorator[T](base, b.features.codec), nil
-		})
-	default:
-		// 这个分支应该永远走不到
-		panic("unreachable for Builder.buildFactory")
 	}
+
+	b.factory = cache.WithFactory(func(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
+		return b.buildPlainTypedCache(store, ob)
+	})
+}
+
+func (b *Builder[T]) hasStagedFeaturesEnabled() bool {
+	return b.features.logicExpire.enabled ||
+		b.features.codec != nil ||
+		b.features.typeAdapter != nil ||
+		len(b.features.byteTransforms) > 0
+}
+
+func (b *Builder[T]) buildPlainTypedCache(store cache.Store, ob *telemetry.Observable) (cache.Cache[T], error) {
+	if !b.requiresBytePath() {
+		return cache.NewBaseCache[T](store), nil
+	}
+
+	byteCache, err := b.buildByteCache(store, ob)
+	if err != nil {
+		return nil, err
+	}
+
+	return b.adaptBytesToType(byteCache, ob)
+}
+
+func (b *Builder[T]) buildLogicWireCache(store cache.Store, ob *telemetry.Observable) (cache.Cache[decorator.LogicTTLValue[T]], error) {
+	if !b.requiresBytePath() {
+		return cache.NewBaseCache[decorator.LogicTTLValue[T]](store), nil
+	}
+
+	byteCache, err := b.buildByteCache(store, ob)
+	if err != nil {
+		return nil, err
+	}
+
+	// 逻辑过期的 wire type 是 LogicTTLValue[T]，当前仅 codec 能做该泛型适配。
+	if b.features.codec == nil {
+		return nil, errors.New("logic-expire with byte transforms requires codec to adapt LogicTTLValue[T] <-> []byte")
+	}
+
+	return newCodecDecorator[decorator.LogicTTLValue[T]](byteCache, b.features.codec), nil
+}
+
+func (b *Builder[T]) buildByteCache(store cache.Store, ob *telemetry.Observable) (cache.Cache[[]byte], error) {
+	var current cache.Cache[[]byte] = cache.NewBaseCache[[]byte](store)
+	var err error
+	for _, transform := range b.features.byteTransforms {
+		current, err = transform(current, ob)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return current, nil
+}
+
+func (b *Builder[T]) adaptBytesToType(next cache.Cache[[]byte], ob *telemetry.Observable) (cache.Cache[T], error) {
+	if b.features.typeAdapter != nil {
+		return b.features.typeAdapter(next, ob)
+	}
+	if b.features.codec != nil {
+		return newCodecDecorator[T](next, b.features.codec), nil
+	}
+	if isBytesType[T]() {
+		return newBytesPassThroughCache[T](next), nil
+	}
+	return nil, fmt.Errorf("byte-stage enabled but no adapter configured for type %s: configure WithCodec or WithTypeAdapter", reflect.TypeFor[T]().String())
+}
+
+func (b *Builder[T]) requiresBytePath() bool {
+	if len(b.features.byteTransforms) > 0 {
+		return true
+	}
+	if b.features.codec != nil {
+		return true
+	}
+	if b.features.typeAdapter != nil {
+		return true
+	}
+	return false
+}
+
+func isBytesType[T any]() bool {
+	return reflect.TypeFor[T]() == reflect.TypeFor[[]byte]()
 }
 
 func (b *Builder[T]) checkTTLConfigValid() bool {
@@ -287,4 +348,46 @@ func newCodecDecorator[T any](next cache.Cache[[]byte], codec codec.Codec) *deco
 		Cache: next,
 		Codec: codec,
 	}
+}
+
+type bytesPassThroughCache[T any] struct {
+	cache.Cache[[]byte]
+}
+
+func newBytesPassThroughCache[T any](next cache.Cache[[]byte]) cache.Cache[T] {
+	return &bytesPassThroughCache[T]{Cache: next}
+}
+
+func (c *bytesPassThroughCache[T]) Get(ctx context.Context, key string, opts ...cache.CallOption) (T, error) {
+	var zero T
+	v, err := c.Cache.Get(ctx, key, opts...)
+	if err != nil {
+		return zero, err
+	}
+	typed, ok := any(v).(T)
+	if !ok {
+		return zero, fmt.Errorf("internal type mismatch: expected %s from []byte bridge", reflect.TypeFor[T]())
+	}
+	return typed, nil
+}
+
+func (c *bytesPassThroughCache[T]) Set(ctx context.Context, key string, val T, ttl time.Duration, opts ...cache.CallOption) error {
+	raw, ok := any(val).([]byte)
+	if !ok {
+		return fmt.Errorf("internal type mismatch: expected %s to be []byte", reflect.TypeFor[T]())
+	}
+	return c.Cache.Set(ctx, key, raw, ttl, opts...)
+}
+
+func (c *bytesPassThroughCache[T]) GetWithTTL(ctx context.Context, key string, opts ...cache.CallOption) (T, time.Duration, error) {
+	var zero T
+	v, ttl, err := c.Cache.GetWithTTL(ctx, key, opts...)
+	if err != nil {
+		return zero, 0, err
+	}
+	typed, ok := any(v).(T)
+	if !ok {
+		return zero, 0, fmt.Errorf("internal type mismatch: expected %s from []byte bridge", reflect.TypeFor[T]())
+	}
+	return typed, ttl, nil
 }

@@ -1,17 +1,21 @@
 # 架构和装饰器链路说明
 
-本文说明 `cachalot` 单缓存能力的核心架构：`Store`、`Factory`、`Decorator` 的职责边界，以及 Builder 模式下的实际装配顺序。
+本文说明 `cachalot` 单缓存能力的核心架构：`Store`、`Factory`、`Decorator` 的职责边界，以及 Builder 的阶段化装配顺序。
 
 ## 1. 总体架构
 
 ```mermaid
 flowchart LR
     A[业务调用 Cache Get/Set/GetWithTTL/Delete/Clear]
-    B[Decorator 链 miss loader / nil cache / singleflight / custom]
-    C[Factory 层 base / codec / logic-expire]
-    D[Store redis / ristretto / custom]
+    B[Behavior Decorator 链  miss loader / nil cache / singleflight / custom]
+    C[Typed Feature 逻辑层  logic-expire]
+    E[Byte Stage  codec / compression / byte-transform]
+    D[Store  redis / ristretto / custom]
 
-    A --> B --> C --> D
+    A --> B --> C --> E --> D
+    A --> C
+    B --> E
+    B --> D
 ```
 
  
@@ -19,8 +23,10 @@ flowchart LR
 
 分层职责：
 
-- `Decorator`：只关注“如何用缓存”（并发收敛、回源、防击穿、观测等），不关注底层存储类型。
-- `Factory`：负责把 `Store` 适配成具体 `Cache[T]`，并处理类型桥接（例如 `[]byte <-> T`、逻辑过期结构封装）。
+- `Behavior Decorator`：只关注“如何用缓存”（并发收敛、回源、防击穿、观测等），不关注底层存储类型。
+- `Typed Feature`：对强类型值做语义增强（当前为逻辑过期）。
+- `Byte Stage`：对字节流做线性转换（`TypeAdapter`、`Codec`、`Compression`、未来加密等）。
+- `Factory`：负责把 `Store` 绑定到 pipeline 的最内层缓存。
 - `Store`：对具体存储客户端的最小封装，提供统一读写语义。
 
 ## 2. 核心抽象
@@ -89,23 +95,25 @@ type Metrics interface {
 
 - 若顺序是 `d1, d2, d3`，最终结构是 `d3(d2(d1(base)))`。
 
-## 4. Builder 模式的默认装配
+## 4. Builder 模式的阶段化装配
 
 `NewBuilder`（根目录 `cache.go`）默认行为：
 
-- 默认 `factory`：`BaseCache[T]`。
 - 默认启用 `singleflight`（可用 `WithSingleFlight(false)` 关闭）。
 - 默认 `metrics`：`telemetry.NoopMetrics()`。
 - 默认 `logger`：`telemetry.SlogLogger()`。
 - 默认观测装饰器：`decorator.NewObservableDecorator`。
+- 默认不启用字节转换链。
 
 `Build()`（根目录 `cache.go`）会按以下步骤组装：
 
-1. 根据 `codec / logic-expire / custom factory` 决定最终 factory。
-2. 追加 miss-loader 装饰器（若配置）。
-3. 追加 nil-cache 装饰器（若配置）。
-4. 追加 singleflight 装饰器（若开启）。
-5. 调用 `cache.New(...)`，按 Option 顺序注入：
+1. 先编译 Factory（阶段化）：
+   - 决定是否走 byte-stage（`codec/type-adapter/byte-transform`）。
+   - 应用 `ByteTransform` 链（如 compression）。
+   - 连接 `TypeAdapter`（`T <-> []byte`）。
+   - 应用 typed feature（logic-expire）。
+2. 追加 behavior decorators：miss-loader -> nil-cache -> singleflight。
+3. 调用 `cache.New(...)`，按 Option 顺序注入：
    - `WithObservable(...)`
    - `factory`
    - `WithOptions(b.decorators...)`
@@ -125,14 +133,14 @@ type Decorator[T any] func(cache Cache[T], ob *telemetry.Observable) (Cache[T], 
 - Low-level：通过 `cache.WithDecorator(...)` 传入 `cache.New`。
 - Builder：通过 `WithDecorators(...)` 传入。
 
-建议：Decorator 只做单一职责，避免同时承担编解码、存储适配等 factory 责任。
+建议：行为型 Decorator 只做单一职责；类型转换和字节转换进入 stage pipeline。
 
 ### 自定义 Factory
 
 - Low-level：`cache.WithFactory(...)`。
 - Builder：`WithFactory(...)`。
 
-如果同时启用 `WithFactory` 与 `codec/logic-expire`，以自定义 factory 为准（由 Builder 配置优先级控制）。
+`WithFactory`/`WithCustomPlan` 与 staged feature（`codec/logic-expire/compression/type-adapter`）互斥，同时开启会报错。
 
 ## 6. 选型建议
 

@@ -38,7 +38,7 @@
 
 - 单级缓存（Single Cache），支持可插拔 `Store`。
 - 多级缓存（Multi Cache），支持可配置 fetch / write-back 策略。
-- 基于 decorator 的能力编排（codec、逻辑过期、singleflight、miss loader）。
+- 基于 decorator 的能力编排（codec、压缩、逻辑过期、singleflight、miss loader）。
 - 统一观测能力（metrics + logger）。
 - 同时提供 Builder 高层 API（开箱即用）与 core 低层 API（精细编排）。
 
@@ -92,6 +92,7 @@ u, err := cache.Get(context.Background(), "user-1")
 - `WithCacheMissDefaultWriteBackTTL`：回源成功后的默认回写 TTL。
 - `WithSingleFlight`：并发请求合并。
 - `WithCodec`：面向字节型存储的编解码。
+- `WithCompression`：字节阶段压缩/解压。
 - `WithLogicExpire*`：逻辑过期（stale-while-revalidate）。
 - `WithLogger` / `WithMetrics`：接入观测能力。
 
