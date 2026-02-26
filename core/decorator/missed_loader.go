@@ -49,7 +49,7 @@ func (d *MissedLoaderDecorator[T]) Get(ctx context.Context, key string, opts ...
 
 func (d *MissedLoaderDecorator[T]) loadFromSource(ctx context.Context, key string, opts ...cache.CallOption) (T, error) {
 	var zero T
-	val, err := d.loadFn(ctx, key)
+	val, err := d.loadFn(ctx, key, opts...)
 	if err != nil {
 		// load failed
 		return zero, err

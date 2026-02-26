@@ -35,7 +35,7 @@ type MultiCache[T any] interface {
 	Delete(ctx context.Context, key string, opts ...cache.CallOption) error
 	Clear(ctx context.Context) error
 	Caches() []cache.Cache[T]
-	FetchByLoader(ctx context.Context, key string) (T, error)
+	FetchByLoader(ctx context.Context, key string, opts ...cache.CallOption) (T, error)
 	Logger() telemetry.Logger
 	Metrics() telemetry.Metrics
 }
@@ -121,8 +121,8 @@ func (m *multiCache[T]) Caches() []cache.Cache[T] {
 	return m.caches
 }
 
-func (m *multiCache[T]) FetchByLoader(ctx context.Context, key string) (val T, err error) {
-	return m.cfg.LoaderFn(ctx, key)
+func (m *multiCache[T]) FetchByLoader(ctx context.Context, key string, opts ...cache.CallOption) (val T, err error) {
+	return m.cfg.LoaderFn(ctx, key, opts...)
 }
 
 func (m *multiCache[T]) Logger() telemetry.Logger {

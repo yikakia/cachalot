@@ -40,7 +40,7 @@ func TestMissedLoaderDecorator_Get(t *testing.T) {
 		mockCache.EXPECT().Get(gomock.Any(), gomock.Eq(key)).Return("", cache.ErrNotFound)
 		mockCache.EXPECT().Set(gomock.Any(), gomock.Eq(key), gomock.Eq(val), gomock.Eq(ttl)).Return(nil)
 
-		loader := func(ctx context.Context, k string) (string, error) {
+		loader := func(ctx context.Context, k string, _ ...cache.CallOption) (string, error) {
 			assert.Equal(t, key, k)
 			return val, nil
 		}
@@ -62,7 +62,7 @@ func TestMissedLoaderDecorator_Get(t *testing.T) {
 		mockCache.EXPECT().Get(gomock.Any(), gomock.Eq(key)).Return("", cache.ErrNotFound)
 
 		loaderErr := errors.New("loader error")
-		loader := func(ctx context.Context, k string) (string, error) {
+		loader := func(ctx context.Context, k string, _ ...cache.CallOption) (string, error) {
 			return "", loaderErr
 		}
 

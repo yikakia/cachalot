@@ -88,7 +88,7 @@ func (d *observableDecorator[T]) Clear(ctx context.Context) (err error) {
 	return d.MultiCache.Clear(ctx)
 }
 
-func (d *observableDecorator[T]) FetchByLoader(ctx context.Context, key string) (val T, err error) {
+func (d *observableDecorator[T]) FetchByLoader(ctx context.Context, key string, opts ...cache.CallOption) (val T, err error) {
 	startTime := time.Now()
 	var evt = &telemetry.Event{
 		Op:        "fetch_by_loader",
@@ -102,7 +102,7 @@ func (d *observableDecorator[T]) FetchByLoader(ctx context.Context, key string) 
 	}()
 	ctx = telemetry.ContextWithEvent(ctx, evt)
 
-	return d.MultiCache.FetchByLoader(ctx, key)
+	return d.MultiCache.FetchByLoader(ctx, key, opts...)
 }
 
 func (d *observableDecorator[T]) Logger() telemetry.Logger {

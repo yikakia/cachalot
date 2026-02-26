@@ -50,7 +50,7 @@ func FetchPolicySequential[T any](ctx context.Context, getCtx *FetchContext[T]) 
 	}
 
 	// 没有加载成功的，可能是不存在或者失败，这里认为是都需要回源
-	val, err := m.FetchByLoader(ctx, key)
+	val, err := m.FetchByLoader(ctx, key, getCtx.Options...)
 	if err != nil {
 		// 回源失败了，这里直接返回 err
 		return zero, nil, fmt.Errorf("[FetchPolicySequential] get from source failed: %w", err)

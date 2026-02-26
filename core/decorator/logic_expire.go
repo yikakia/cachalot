@@ -46,7 +46,7 @@ type LogicTTLDecorator[T any] struct {
 	logicExpireMetrics func(ctx context.Context)
 
 	defaultLogicTTL time.Duration
-	loadFn          func(ctx context.Context, key string) (T, error)
+	loadFn          LoaderFn[T]
 	writeBackTTL    time.Duration
 }
 
@@ -73,7 +73,7 @@ func (d *LogicTTLDecorator[T]) onExpire(ctx context.Context, key string, opts ..
 		return
 	}
 
-	val, err := d.loadFn(ctx, key)
+	val, err := d.loadFn(ctx, key, opts...)
 	if err != nil {
 		d.ob.Logger.ErrorContext(ctx, "[LogicTTLDecorator] load from source failed.", "key", key, "err", err)
 	}

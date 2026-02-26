@@ -3,17 +3,18 @@ package decorator
 import (
 	"context"
 
+	"github.com/yikakia/cachalot/core/cache"
 	"golang.org/x/sync/singleflight"
 )
 
-type LoaderFn[T any] func(ctx context.Context, key string) (T, error)
+type LoaderFn[T any] func(ctx context.Context, key string, opts ...cache.CallOption) (T, error)
 
 func SingleflightWrapper[T any](fn LoaderFn[T]) LoaderFn[T] {
 	g := &singleflight.Group{}
-	return func(ctx context.Context, key string) (T, error) {
+	return func(ctx context.Context, key string, opts ...cache.CallOption) (T, error) {
 		var zero T
 		ch := g.DoChan(key, func() (interface{}, error) {
-			return fn(ctx, key)
+			return fn(ctx, key, opts...)
 		})
 		select {
 		case <-ctx.Done():

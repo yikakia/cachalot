@@ -69,13 +69,6 @@ func NewBuilder[T any](name string, store cache.Store, opts ...cache.Option[T]) 
 		store:     store,
 		features: features[T]{
 			singleFlight: true,
-			missLoader: struct {
-				loadFn              decorator.LoaderFn[T]
-				defaultWriteBackTTL time.Duration
-			}{
-				loadFn:              nil,
-				defaultWriteBackTTL: 0,
-			},
 		},
 		factory: cache.WithSimpleFactory(func(store cache.Store) (cache.Cache[T], error) {
 			return cache.NewBaseCache[T](store), nil
