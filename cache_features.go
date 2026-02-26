@@ -50,6 +50,18 @@ func (b *Builder[T]) WithLogicExpireDefaultWriteBackTTL(d time.Duration) *Builde
 	return b
 }
 
+// 如果 T = []byte，是否启用内置的 LogicTTLBytesAdapter 适配器
+//
+// 启用后会在逻辑过期功能的基础上，自动将 LogicTTLValue[[]byte] 编码为 []byte 存储，格式为 [8-byte little-endian UnixNano expireAt][raw payload]
+// 使用场景: 源数据是 []byte 使用了压缩功能，同时还想使用逻辑过期的功能，可以启用这个适配器，避免引入 codec 包和额外的编码开销。
+func (b *Builder[T]) WithLogicExpireBytesAdapter(enable bool) *Builder[T] {
+	b.features.logicExpire.enableBytesAdapter = enable
+	if enable {
+		b.features.logicExpire.enabled = true
+	}
+	return b
+}
+
 func (b *Builder[T]) WithLogicExpireLoader(fn decorator.LoaderFn[T]) *Builder[T] {
 	b.features.logicExpire.enabled = true
 	b.features.logicExpire.loadFn = fn

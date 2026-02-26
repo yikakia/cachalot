@@ -18,7 +18,7 @@ func TestNewBuilderValidation(t *testing.T) {
 	require.Error(t, err)
 
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
+
 	store := mocks.NewMockStore(ctrl)
 
 	_, err = NewBuilder[string]("cache", store)
@@ -27,7 +27,6 @@ func TestNewBuilderValidation(t *testing.T) {
 
 func TestBuilderBuildAndDelegateToStore(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	ctx := context.Background()
 	store := mocks.NewMockStore(ctrl)
@@ -49,7 +48,6 @@ func TestBuilderBuildAndDelegateToStore(t *testing.T) {
 
 func TestBuilderRejectsNegativeLogicTTL(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	store := mocks.NewMockStore(ctrl)
 	builder, err := NewBuilder[string]("single-cache", store)
@@ -62,7 +60,6 @@ func TestBuilderRejectsNegativeLogicTTL(t *testing.T) {
 
 func TestBuilderCompressionWithBytesWithoutCodec(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	ctx := context.Background()
 	store := mocks.NewMockStore(ctrl)
@@ -100,7 +97,6 @@ func TestBuilderCompressionWithBytesWithoutCodec(t *testing.T) {
 
 func TestBuilderCompressionWithCodec(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	ctx := context.Background()
 	store := mocks.NewMockStore(ctrl)
@@ -143,7 +139,6 @@ func TestBuilderCompressionWithCodec(t *testing.T) {
 
 func TestBuilderLogicExpireWithCodecAndCompression(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	ctx := context.Background()
 	store := mocks.NewMockStore(ctrl)
@@ -179,9 +174,63 @@ func TestBuilderLogicExpireWithCodecAndCompression(t *testing.T) {
 	require.Equal(t, "v", got)
 }
 
+func TestBuilderLogicExpireWithBytesAndCompressionWithoutCodec(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	ctx := context.Background()
+	store := mocks.NewMockStore(ctrl)
+
+	plain := []byte("logic-bytes")
+	var written []byte
+	store.EXPECT().StoreName().Return("mock-store").Times(1)
+	store.EXPECT().Set(gomock.Any(), "k", gomock.Any(), time.Minute).DoAndReturn(
+		func(_ context.Context, _ string, val any, _ time.Duration, _ ...cache.CallOption) error {
+			raw, ok := val.([]byte)
+			require.True(t, ok)
+			written = raw
+			return nil
+		},
+	)
+	store.EXPECT().Get(gomock.Any(), "k").DoAndReturn(
+		func(_ context.Context, _ string, _ ...cache.CallOption) (any, error) {
+			return written, nil
+		},
+	)
+
+	builder, err := NewBuilder[[]byte]("logic-bytes-compress", store)
+	require.NoError(t, err)
+	c, err := builder.
+		WithLogicExpireEnabled(true).
+		WithLogicExpireBytesAdapter(true).
+		WithCompression(codec.GzipCompressionCodec{}).
+		Build()
+	require.NoError(t, err)
+
+	require.NoError(t, c.Set(ctx, "k", plain, time.Minute))
+	require.NotEqual(t, plain, written)
+
+	got, err := c.Get(ctx, "k")
+	require.NoError(t, err)
+	require.Equal(t, plain, got)
+}
+
+func TestBuilderLogicExpireWithBytesAndCompressionWithoutExplicitBytesAdapterShouldFail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	store := mocks.NewMockStore(ctrl)
+
+	builder, err := NewBuilder[[]byte]("logic-bytes-compress-no-explicit-adapter", store)
+	require.NoError(t, err)
+	_, err = builder.
+		WithLogicExpireEnabled(true).
+		WithCompression(codec.GzipCompressionCodec{}).
+		Build()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "try use builder.WithLogicExpireBytesAdapter(true) to enable it")
+}
+
 func TestBuilderCompressionWithoutAdapterShouldFail(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	store := mocks.NewMockStore(ctrl)
 
@@ -194,7 +243,6 @@ func TestBuilderCompressionWithoutAdapterShouldFail(t *testing.T) {
 
 func TestBuilderCompressionWithCustomTypeAdapter(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	ctx := context.Background()
 	store := mocks.NewMockStore(ctrl)
@@ -233,7 +281,6 @@ func TestBuilderCompressionWithCustomTypeAdapter(t *testing.T) {
 
 func TestBuilderWithFactoryConflictWithStagedFeatures(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
 
 	store := mocks.NewMockStore(ctrl)
 

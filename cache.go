@@ -11,6 +11,8 @@ import (
 	"github.com/yikakia/cachalot/core/codec"
 	"github.com/yikakia/cachalot/core/decorator"
 	"github.com/yikakia/cachalot/core/telemetry"
+	"github.com/yikakia/cachalot/internal"
+	"github.com/yikakia/cachalot/internal/adapter"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -34,6 +36,8 @@ type features[T any] struct {
 		loadFn decorator.LoaderFn[T]
 		// 回源后写回缓存 默认一小时的物理过期时间
 		defaultWriteBackTTL time.Duration
+		// 如果 T = []byte，是否启用内置的 LogicTTLBytesAdapter 适配器，避免强制依赖 codec 包 默认不开启
+		enableBytesAdapter bool
 	}
 
 	// cacheMissLoader 独有的配置
@@ -186,7 +190,11 @@ func (b *Builder[T]) compileStages() {
 				return nil, err
 			}
 			cfg := b.buildTTLConfig(wire, ob)
-			return decorator.NewLogicTTLDecorator(cfg), nil
+			d, err := decorator.NewLogicTTLDecorator(cfg)
+			if err != nil {
+				return nil, err
+			}
+			return d, nil
 		})
 		return
 	}
@@ -226,12 +234,7 @@ func (b *Builder[T]) buildLogicWireCache(store cache.Store, ob *telemetry.Observ
 		return nil, err
 	}
 
-	// 逻辑过期的 wire type 是 LogicTTLValue[T]，当前仅 codec 能做该泛型适配。
-	if b.features.codec == nil {
-		return nil, errors.New("logic-expire with byte transforms requires codec to adapt LogicTTLValue[T] <-> []byte")
-	}
-
-	return newCodecDecorator[decorator.LogicTTLValue[T]](byteCache, b.features.codec), nil
+	return b.adaptBytesToLogicWire(byteCache)
 }
 
 func (b *Builder[T]) buildByteCache(store cache.Store, ob *telemetry.Observable) (cache.Cache[[]byte], error) {
@@ -253,10 +256,25 @@ func (b *Builder[T]) adaptBytesToType(next cache.Cache[[]byte], ob *telemetry.Ob
 	if b.features.codec != nil {
 		return newCodecDecorator[T](next, b.features.codec), nil
 	}
-	if isBytesType[T]() {
+	if internal.IsBytesType[T]() {
 		return newBytesPassThroughCache[T](next), nil
 	}
 	return nil, fmt.Errorf("byte-stage enabled but no adapter configured for type %s: configure WithCodec or WithTypeAdapter", reflect.TypeFor[T]().String())
+}
+
+func (b *Builder[T]) adaptBytesToLogicWire(next cache.Cache[[]byte]) (cache.Cache[decorator.LogicTTLValue[T]], error) {
+	if b.features.codec != nil {
+		return newCodecDecorator[decorator.LogicTTLValue[T]](next, b.features.codec), nil
+	}
+	// 内置支持 T=[]byte 的逻辑过期 wire 适配，避免强制依赖 codec。
+	if internal.IsBytesType[T]() {
+		if b.features.logicExpire.enableBytesAdapter {
+			return adapter.NewLogicTTLBytesAdapter[T](next)
+		}
+		return nil, fmt.Errorf("logicTTLBytesAdapter supports []byte value type. try use builder.WithLogicExpireBytesAdapter(true) to enable it, or configure WithCodec for LogicTTLValue[T] <-> []byte adapter")
+	}
+
+	return nil, fmt.Errorf("logic-expire byte-stage requires adapter for %s: configure WithCodec for LogicTTLValue[T] <-> []byte", reflect.TypeFor[T]().String())
 }
 
 func (b *Builder[T]) requiresBytePath() bool {
@@ -270,10 +288,6 @@ func (b *Builder[T]) requiresBytePath() bool {
 		return true
 	}
 	return false
-}
-
-func isBytesType[T any]() bool {
-	return reflect.TypeFor[T]() == reflect.TypeFor[[]byte]()
 }
 
 func (b *Builder[T]) checkTTLConfigValid() bool {

@@ -14,8 +14,8 @@ builder.WithCompression(codec.GzipCompressionCodec{})
 ## 2. 组合规则
 
 - `T == []byte`：可仅启用 compression，不强制 codec。
+- 当 `WithLogicExpire...` 且启用 byte-stage 时，当前要求配置 `WithLogicExpireBytesAdapter` 以适配 `LogicTTLValue[T]`。
 - `T != []byte`：需要 `WithCodec(...)` 或 `WithTypeAdapter(...)` 提供 `T <-> []byte` 适配。
-- 当 `WithLogicExpire...` 且启用 byte-stage 时，当前要求配置 `WithCodec(...)` 以适配 `LogicTTLValue[T]`。
 
 ## 3. 顺序
 

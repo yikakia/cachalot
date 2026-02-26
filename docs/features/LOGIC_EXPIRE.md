@@ -66,14 +66,18 @@ c, err := builder.
 - `WithLogicExpireLoader(fn)`：逻辑过期后的回源函数。
 - `WithLogicExpireEnabled(true)`：显式开关。
 
-## 5. 关键注意事项
+## 5. 组合规则
+- 当 `WithLogicExpire...` 且启用 byte-stage 时：
+  - `T == []byte`：当 `WithLogicExpire...` 且启用 byte-stage 时，当前要求配置 `WithLogicExpireBytesAdapter` 以启用 `LogicTTLValue[T] <-> []byte` 的内置支持，此时不需要使用 `WithCodec(...)`。
+  - `T != []byte`：需要 `WithCodec(...)` 适配 `LogicTTLValue[T] <-> []byte`。
 
-- 强烈建议启用逻辑过期时始终提供 `WithLogicExpireLoader`。
-- 当前代码在“逻辑过期且 `loadFn == nil`”时会在过期路径调用空函数，存在 panic 风险。
+## 6. 关键注意事项
+
 - `GetWithTTL` 返回的是物理 TTL，不是逻辑 TTL。
 - `defaultLogicTTL=0` 时，`ExpireAt` 为零值，表示逻辑上永不过期。
+- 如果使用了 `WithLogicExpireBytesAdapter`，内置支持是将过期时间编码为八个字节，写入字节数组的头部，如果对 value 大小有严格限制，则不应使用此内置支持或开启此功能
 
-## 6. 指标扩展点
+## 7. 指标扩展点
 
 如果你的 `Metrics` 还实现了：
 

@@ -25,7 +25,7 @@ type LogicTTLDecoratorConfig[T any] struct {
 	Observer *telemetry.Observable
 }
 
-func NewLogicTTLDecorator[T any](config LogicTTLDecoratorConfig[T]) *LogicTTLDecorator[T] {
+func NewLogicTTLDecorator[T any](config LogicTTLDecoratorConfig[T]) (*LogicTTLDecorator[T], error) {
 	l := &LogicTTLDecorator[T]{
 		cache:           config.Cache,
 		ob:              config.Observer,
@@ -37,7 +37,7 @@ func NewLogicTTLDecorator[T any](config LogicTTLDecoratorConfig[T]) *LogicTTLDec
 		l.logicExpireMetrics = ttlMetrics.RecordLogicExpire
 	}
 
-	return l
+	return l, nil
 }
 
 type LogicTTLDecorator[T any] struct {
@@ -58,9 +58,7 @@ func (d *LogicTTLDecorator[T]) Get(ctx context.Context, key string, opts ...cach
 	}
 
 	if val.IsExpire() {
-
 		d.onExpire(ctx, key, opts...)
-
 	}
 
 	return val.Val, nil
@@ -69,6 +67,10 @@ func (d *LogicTTLDecorator[T]) Get(ctx context.Context, key string, opts ...cach
 func (d *LogicTTLDecorator[T]) onExpire(ctx context.Context, key string, opts ...cache.CallOption) {
 	if d.logicExpireMetrics != nil {
 		d.logicExpireMetrics(ctx)
+	}
+
+	if d.loadFn == nil {
+		return
 	}
 
 	val, err := d.loadFn(ctx, key)
