@@ -17,6 +17,11 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		opt.Apply(config)
 	}
 
+	skipSet := map[string]bool{}
+	for _, test := range config.SkipTests {
+		skipSet[test] = true
+	}
+
 	waitForCache := func(t *testing.T, s cache.Store) {
 		config.WaitingAfterWrite(t, s)
 	}

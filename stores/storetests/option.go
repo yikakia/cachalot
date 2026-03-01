@@ -12,6 +12,7 @@ type Config struct {
 	SetOptions        []cache.CallOption
 	EncodeSetValue    func(string) any
 	AssertValue       func(t *testing.T, got any, expected string)
+	SkipTests         []string
 }
 
 type Option interface {
@@ -45,6 +46,12 @@ func WithEncodeSetValue(f func(string) any) Option {
 func WithAssertValue(f func(t *testing.T, got any, expected string)) Option {
 	return OptionFunc(func(c *Config) {
 		c.AssertValue = f
+	})
+}
+
+func WithSkipTests(t ...string) Option {
+	return OptionFunc(func(c *Config) {
+		c.SkipTests = t
 	})
 }
 
