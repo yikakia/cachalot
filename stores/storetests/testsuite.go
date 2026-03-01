@@ -74,12 +74,13 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			ctx := context.Background()
 
 			// 设置一个很短 TTL 的值
-			err := s.Set(ctx, "expired-key", encodeSetValue("value"), 50*time.Millisecond, config.SetOptions...)
+			// 存在一些实现 只支持秒级的精度
+			err := s.Set(ctx, "expired-key", encodeSetValue("value"), time.Second, config.SetOptions...)
 			require.NoError(t, err)
 			waitForCache(t, s)
 
 			// 等待过期
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Millisecond * 1100)
 
 			// 获取已过期的 key
 			val, err := s.Get(ctx, "expired-key")
