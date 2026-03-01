@@ -3,15 +3,12 @@ package integration
 import (
 	"bytes"
 	"context"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	tclog "github.com/testcontainers/testcontainers-go/log"
 	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/valkey-io/valkey-go"
@@ -22,32 +19,15 @@ import (
 
 func newValkeyClient(t *testing.T) valkey.Client {
 	ctx := context.Background()
-	exposedPort := "6379/tcp"
-
-	waitReadyCmd := []string{
-		"valkey-cli",
-		"ping",
-	}
 
 	opts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithLogger(tclog.TestLogger(t)),
+		//testcontainers.WithLogger(tclog.TestLogger(t)),
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
 				wait.ForLog("* Ready to accept connections"),
 				wait.ForExposedPort(),
-				wait.ForListeningPort(nat.Port(exposedPort)),
-				wait.ForExec(waitReadyCmd),
 			),
 		),
-		// attempt to reuse this container
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Name:     "valkey",
-				Hostname: "localhost",
-			},
-			Started: true,
-			Reuse:   true,
-		}),
 	}
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:latest", opts...)
@@ -59,10 +39,9 @@ func newValkeyClient(t *testing.T) valkey.Client {
 	endpoint, err := valkeyContainer.ConnectionString(context.TODO())
 	require.NoError(t, err)
 
-	valkeyURL, err := url.Parse(endpoint)
+	opt, err := valkey.ParseURL(endpoint)
 	require.NoError(t, err)
-
-	client, err := valkey.NewClient(valkey.ClientOption{InitAddress: []string{valkeyURL.Host}})
+	client, err := valkey.NewClient(opt)
 	require.NoError(t, err)
 
 	return client
