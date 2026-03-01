@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/yikakia/cachalot"
+	"github.com/yikakia/cachalot/core/cache"
 	store_ristretto "github.com/yikakia/cachalot/stores/ristretto"
 )
 
@@ -27,7 +28,7 @@ func main() {
 	store := store_ristretto.New(client, store_ristretto.WithStoreName("logic-expire-ristretto"))
 
 	var loaderCalls atomic.Int32
-	loadFn := func(ctx context.Context, key string) (string, error) {
+	loadFn := func(ctx context.Context, key string, opts ...cache.CallOption) (string, error) {
 		_ = ctx
 		n := loaderCalls.Add(1)
 		time.Sleep(250 * time.Millisecond)

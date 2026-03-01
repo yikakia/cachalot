@@ -68,7 +68,7 @@ func main() {
 	}
 
 	var loaderCalls atomic.Int32
-	loader := func(ctx context.Context, key string) (string, error) {
+	loader := func(ctx context.Context, key string, opts ...cache.CallOption) (string, error) {
 		_ = ctx
 		n := loaderCalls.Add(1)
 		time.Sleep(120 * time.Millisecond)
