@@ -69,7 +69,7 @@ func (f *fakeClient) Set(ctx context.Context, key string, value any, expiration 
 	return goredis.NewStatusResult("OK", nil)
 }
 
-func (f *fakeClient) TTL(ctx context.Context, key string) *goredis.DurationCmd {
+func (f *fakeClient) PTTL(ctx context.Context, key string) *goredis.DurationCmd {
 	if err := ctx.Err(); err != nil {
 		return goredis.NewDurationResult(0, err)
 	}

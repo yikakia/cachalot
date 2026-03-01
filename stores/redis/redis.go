@@ -13,7 +13,7 @@ import (
 type Client interface {
 	Get(ctx context.Context, key string) *redis.StringCmd
 	Set(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd
-	TTL(ctx context.Context, key string) *redis.DurationCmd
+	PTTL(ctx context.Context, key string) *redis.DurationCmd
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
 	FlushDB(ctx context.Context) *redis.StatusCmd
 }
@@ -27,14 +27,6 @@ func New(client Client, opts ...Option) *Store {
 		opt(s)
 	}
 	return s
-}
-
-type Option func(*Store)
-
-func WithStoreName(name string) Option {
-	return func(s *Store) {
-		s.name = name
-	}
 }
 
 type Store struct {
@@ -54,27 +46,37 @@ func (s *Store) Get(ctx context.Context, key string, _ ...cache.CallOption) (any
 }
 
 func (s *Store) Set(ctx context.Context, key string, val any, ttl time.Duration, _ ...cache.CallOption) error {
+	// 对 redis client 而言，ttl == -1 表示保持 ttl 不变
+	// ttl > 0 表示重新设置
+	// ttl <=0 && ttl != -1 表示 永不过期
+	// TODO REVIEW 实际使用
 	if ttl < 0 {
 		return cache.ErrInvalidTTL
 	}
+
 	raw, ok := val.([]byte)
 	if !ok {
 		return fmt.Errorf("want:[]byte got:%T %w", val, cache.ErrTypeMissMatch)
 	}
+
 	return s.client.Set(ctx, key, raw, ttl).Err()
 }
 
+// TODO 可配置项：lua 脚本还是 顺序
 func (s *Store) GetWithTTL(ctx context.Context, key string, opts ...cache.CallOption) (any, time.Duration, error) {
 	val, err := s.Get(ctx, key, opts...)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	ttl, err := s.client.TTL(ctx, key).Result()
+	// TODO 或许可以支持配置使用 TTL 还是 PTTL
+	ttl, err := s.client.PTTL(ctx, key).Result()
 	if err != nil {
 		return nil, 0, err
 	}
 
+	// TODO 已经拿到了 value 如果此时 ttl == -2 说明 key 不存在 或许应该报错
+	// 如果此时 ttl == -1 说明 key 永不过期 但是这和版本相关 应该明确行为是什么
 	if ttl < 0 {
 		return val, 0, nil
 	}
