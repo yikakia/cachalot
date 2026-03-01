@@ -16,7 +16,7 @@ echo "🚀 Starting full test suite..."
 echo ""
 
 # 主模块测试
-echo -e "${YELLOW}[1/3] Testing root modules...${NC}"
+echo -e "${YELLOW}[1/4] Testing root modules...${NC}"
 if go test -v -race ./...; then
     echo -e "${GREEN}✓ Root modules passed${NC}"
 else
@@ -26,7 +26,7 @@ fi
 echo ""
 
 # Redis 存储测试
-echo -e "${YELLOW}[2/3] Testing stores/redis...${NC}"
+echo -e "${YELLOW}[2/4] Testing stores/redis...${NC}"
 if (cd stores/redis && go test -v -race .); then
     echo -e "${GREEN}✓ Redis store passed${NC}"
 else
@@ -36,11 +36,21 @@ fi
 echo ""
 
 # Ristretto 存储测试
-echo -e "${YELLOW}[3/3] Testing stores/ristretto...${NC}"
+echo -e "${YELLOW}[3/4] Testing stores/ristretto...${NC}"
 if (cd stores/ristretto && go test -v -race .); then
     echo -e "${GREEN}✓ Ristretto store passed${NC}"
 else
     echo -e "${RED}✗ Ristretto store failed${NC}"
+    exit 1
+fi
+echo ""
+
+# FreeCache 存储测试
+echo -e "${YELLOW}[4/4] Testing stores/freecache...${NC}"
+if (cd stores/freecache && go test -v -race .); then
+    echo -e "${GREEN}✓ FreeCache store passed${NC}"
+else
+    echo -e "${RED}✗ FreeCache store failed${NC}"
     exit 1
 fi
 echo ""
