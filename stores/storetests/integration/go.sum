@@ -127,8 +127,8 @@ github.com/tklauser/numcpus v0.10.0 h1:18njr6LDBk1zuna922MgdjQuJFjrdppsZG60sHGfj
 github.com/tklauser/numcpus v0.10.0/go.mod h1:BiTKazU708GQTYF4mB+cmlpT2Is1gLk7XVuEeem8LsQ=
 github.com/valkey-io/valkey-go v1.0.72 h1:iRWt1hJyOchcEgbHSkRY3aKkcBudxvMaVMsmxuYxuxE=
 github.com/valkey-io/valkey-go v1.0.72/go.mod h1:VGhZ6fs68Qrn2+OhH+6waZH27bjpgQOiLyUQyXuYK5k=
-github.com/yikakia/cachalot v0.0.0-20260301074221-5320d67d232a h1:kQs3PNVIv6mZqT++lWA/SX+zIC7HapCD8j3xrWgEXiU=
-github.com/yikakia/cachalot v0.0.0-20260301074221-5320d67d232a/go.mod h1:74wyhyC1peldBzMoCeiaLcyGATDEZ4MWRlrNIBZPg9U=
+github.com/yikakia/cachalot v0.0.0-20260301121001-1d1da6f231ea h1:ZikLCyew+/ufPtjMHDvCdPxGEb/MFT2Dv9ONss89E7A=
+github.com/yikakia/cachalot v0.0.0-20260301121001-1d1da6f231ea/go.mod h1:74wyhyC1peldBzMoCeiaLcyGATDEZ4MWRlrNIBZPg9U=
 github.com/yikakia/cachalot/stores/redis v0.0.0-20260301065241-b732e8538067 h1:iZUoEbgN3SIKpmaXGAKy0QE9WJP4mrrZQo6hgC5zXFQ=
 github.com/yikakia/cachalot/stores/redis v0.0.0-20260301065241-b732e8538067/go.mod h1:2HTjfxzwu6mKWextU1/nvsn2sn1enYJ/oJZlmPZSXFY=
 github.com/yikakia/cachalot/stores/valkey v0.0.0-20260301120422-768c47eaed53 h1:4t/xZOQ/+DDr3E7Rde9p3VshPl+xtkeu/GX28aNy8qE=

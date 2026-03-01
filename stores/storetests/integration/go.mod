@@ -9,7 +9,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/valkey v0.40.0
 	github.com/valkey-io/valkey-go v1.0.72
-	github.com/yikakia/cachalot v0.0.0-20260301074221-5320d67d232a
+	github.com/yikakia/cachalot v0.0.0-20260301121001-1d1da6f231ea
 	github.com/yikakia/cachalot/stores/redis v0.0.0-20260301065241-b732e8538067
 	github.com/yikakia/cachalot/stores/valkey v0.0.0-20260301120422-768c47eaed53
 )
