@@ -3,7 +3,6 @@ package integration
 import (
 	"bytes"
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/redis/go-redis/v9"
@@ -32,19 +31,13 @@ func newRedisClient(t *testing.T) *redis.Client {
 	require.NoError(t, err)
 	return redis.NewClient(&redis.Options{Addr: endpoint})
 }
-func newStore(t *testing.T) cache.Store {
-	c := sync.OnceValue(func() *redis.Client {
-		return newRedisClient(t)
-	})
 
-	require.NoError(t, c().FlushDB(context.TODO()).Err())
-
-	return store_redis.New(c(), store_redis.WithStoreName("test_redis"))
-
+func newRedisStore(t *testing.T) cache.Store {
+	return store_redis.New(newRedisClient(t), store_redis.WithStoreName("test_redis"))
 }
 
 func TestRedis(t *testing.T) {
-	storetests.RunStoreTestSuites(t, newStore,
+	storetests.RunStoreTestSuites(t, newRedisStore,
 		storetests.WithEncodeSetValue(func(v string) any {
 			return []byte(v)
 		}),
