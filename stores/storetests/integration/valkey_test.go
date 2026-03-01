@@ -75,14 +75,7 @@ func newValkeyStore(t *testing.T) cache.Store {
 
 func TestValkey(t *testing.T) {
 	storetests.RunStoreTestSuites(t, newValkeyStore,
-		storetests.WithWaitingAfterWrite(func(t *testing.T, _ cache.Store) {
-			if t.Name() == "TestValkey/Clear/NonEmptyStore" {
-				// FIXME 对于 NonEmptyStore 这个测试，flush 可能会出现第一个key不能flush的场景
-				// 单独把这部分逻辑提出来测试却不能复现 不确定是什么问题 暂时跳过这个此时
-				t.Log("FIXME: SKIP NonEmptyStore")
-				t.SkipNow()
-			}
-		}),
+		storetests.WithSkipTests("TestValkey/Clear/NonEmptyStore"),
 		storetests.WithEncodeSetValue(func(v string) any {
 			return []byte(v)
 		}),
