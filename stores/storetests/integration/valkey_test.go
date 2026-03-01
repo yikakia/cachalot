@@ -76,7 +76,7 @@ func newValkeyStore(t *testing.T) cache.Store {
 func TestValkey(t *testing.T) {
 	storetests.RunStoreTestSuites(t, newValkeyStore,
 		storetests.WithWaitingAfterWrite(func(t *testing.T, _ cache.Store) {
-			if t.Name() == "NonEmptyStore" {
+			if t.Name() == "TestValkey/Clear/NonEmptyStore" {
 				// Todo 对于 NonEmptyStore 这个测试，flush 可能会出现第一个key不能flush的场景
 				// 采用暂停的方式保证能通过调用 单独把这部分逻辑提出来测试却不能复现 不确定是什么问题
 				time.Sleep(time.Millisecond * 3500)
