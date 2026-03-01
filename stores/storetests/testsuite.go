@@ -17,8 +17,8 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		opt.Apply(config)
 	}
 
-	waitForCache := func(s cache.Store) {
-		config.WaitingAfterWrite(s)
+	waitForCache := func(t *testing.T, s cache.Store) {
+		config.WaitingAfterWrite(t, s)
 	}
 	encodeSetValue := func(v string) any {
 		return config.EncodeSetValue(v)
@@ -35,7 +35,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 先设置值
 			err := s.Set(ctx, "key1", encodeSetValue("value1"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 获取已存在的 key
 			val, err := s.Get(ctx, "key1")
@@ -51,7 +51,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			val, err := s.Get(ctx, "non-existing-key")
 			assert.Nil(t, val)
 			assert.Error(t, err)
-			assert.True(t, errors.Is(err, cache.ErrNotFound))
+			assert.ErrorIs(t, err, cache.ErrNotFound)
 		})
 
 		t.Run("ExpiredKey", func(t *testing.T) {
@@ -61,7 +61,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置一个很短 TTL 的值
 			err := s.Set(ctx, "expired-key", encodeSetValue("value"), 50*time.Millisecond, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 等待过期
 			time.Sleep(100 * time.Millisecond)
@@ -70,7 +70,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			val, err := s.Get(ctx, "expired-key")
 			assert.Nil(t, val)
 			assert.Error(t, err)
-			assert.True(t, errors.Is(err, cache.ErrNotFound))
+			assert.ErrorIs(t, err, cache.ErrNotFound)
 		})
 
 		t.Run("WithOptions", func(t *testing.T) {
@@ -80,7 +80,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 先设置值
 			err := s.Set(ctx, "option-key", encodeSetValue("option-value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 使用自定义 GetOption
 			customOpt := cache.WithOptionCustomField("custom", "field")
@@ -99,7 +99,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 先设置值
 			err := s.Set(context.Background(), "cancel-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 注意: 具体实现可能不检查 context
 			val, err := s.Get(ctx, "cancel-key")
@@ -117,7 +117,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置新 key
 			err := s.Set(ctx, "new-key", encodeSetValue("new-value"), time.Minute, config.SetOptions...)
 			assert.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 验证能获取到
 			val, err := s.Get(ctx, "new-key")
@@ -132,12 +132,12 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置初始值
 			err := s.Set(ctx, "overwrite-key", encodeSetValue("old-value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 覆盖值
 			err = s.Set(ctx, "overwrite-key", encodeSetValue("new-value"), time.Minute, config.SetOptions...)
 			assert.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 验证新值
 			val, err := s.Get(ctx, "overwrite-key")
@@ -152,7 +152,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// TTL 为 0 表示永不过期
 			err := s.Set(ctx, "zero-ttl-key", encodeSetValue("value"), 0, config.SetOptions...)
 			assert.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 等待一段时间后仍能获取
 			time.Sleep(50 * time.Millisecond)
@@ -180,7 +180,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 
 			err := s.Set(ctx, "options-key", encodeSetValue("value"), time.Minute, opts...)
 			assert.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 验证值已设置
 			val, err := s.Get(ctx, "options-key")
@@ -209,7 +209,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置值
 			err := s.Set(ctx, "ttl-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 获取值和 TTL
 			val, ttl, err := s.GetWithTTL(ctx, "ttl-key")
@@ -228,7 +228,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			assert.Nil(t, val)
 			assert.Zero(t, ttl)
 			assert.Error(t, err)
-			assert.True(t, errors.Is(err, cache.ErrNotFound))
+			assert.ErrorIs(t, err, cache.ErrNotFound)
 		})
 
 		t.Run("TTLDecreasing", func(t *testing.T) {
@@ -238,7 +238,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置值
 			err := s.Set(ctx, "decreasing-ttl-key", encodeSetValue("value"), 5*time.Second, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 第一次获取 TTL
 			_, ttl1, err := s.GetWithTTL(ctx, "decreasing-ttl-key")
@@ -262,7 +262,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置永不过期的值 (TTL = 0)
 			err := s.Set(ctx, "no-expiry-key", encodeSetValue("value"), 0, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 获取 TTL
 			val, ttl, err := s.GetWithTTL(ctx, "no-expiry-key")
@@ -279,7 +279,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 设置值
 			err := s.Set(ctx, "ttl-option-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 使用自定义 GetOption
 			customOpt := cache.WithOptionCustomField("custom", "field")
@@ -298,7 +298,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 先设置值
 			err := s.Set(ctx, "delete-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 删除
 			err = s.Delete(ctx, "delete-key")
@@ -308,7 +308,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			val, err := s.Get(ctx, "delete-key")
 			assert.Nil(t, val)
 			assert.Error(t, err)
-			assert.True(t, errors.Is(err, cache.ErrNotFound))
+			assert.ErrorIs(t, err, cache.ErrNotFound)
 		})
 
 		t.Run("NonExistingKey", func(t *testing.T) {
@@ -327,7 +327,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 先设置值
 			err := s.Set(ctx, "delete-option-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 使用 DeleteOption 删除
 			err = s.Delete(ctx, "delete-option-key")
@@ -344,7 +344,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			// 先设置值
 			err := s.Set(context.Background(), "cancel-delete-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 创建已取消的 context
 			ctx, cancel := context.WithCancel(context.Background())
@@ -375,7 +375,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 				err := s.Set(ctx, key, encodeSetValue("value"), time.Minute, config.SetOptions...)
 				require.NoError(t, err)
 			}
-			waitForCache(s)
+			waitForCache(t, s)
 
 			// 验证值存在
 			for _, key := range keys {

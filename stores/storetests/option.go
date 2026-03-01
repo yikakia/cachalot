@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	WaitingAfterWrite func(cache.Store)
+	WaitingAfterWrite func(*testing.T, cache.Store)
 	SetOptions        []cache.CallOption
 	EncodeSetValue    func(string) any
 	AssertValue       func(t *testing.T, got any, expected string)
@@ -24,7 +24,7 @@ func (f OptionFunc) Apply(c *Config) {
 	f(c)
 }
 
-func WithWaitingAfterWrite(f func(cache.Store)) Option {
+func WithWaitingAfterWrite(f func(t *testing.T, s cache.Store)) Option {
 	return OptionFunc(func(c *Config) {
 		c.WaitingAfterWrite = f
 	})
@@ -50,7 +50,7 @@ func WithAssertValue(f func(t *testing.T, got any, expected string)) Option {
 
 func NewConfig() *Config {
 	return &Config{
-		WaitingAfterWrite: func(cache.Store) {},
+		WaitingAfterWrite: func(*testing.T, cache.Store) {},
 		SetOptions:        []cache.CallOption{},
 		EncodeSetValue: func(v string) any {
 			return v
