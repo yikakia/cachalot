@@ -22,6 +22,12 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		skipSet[test] = true
 	}
 
+	trySkip := func(t *testing.T) {
+		if skipSet[t.Name()] {
+			t.Skip()
+		}
+	}
+
 	waitForCache := func(t *testing.T, s cache.Store) {
 		config.WaitingAfterWrite(t, s)
 	}
@@ -33,7 +39,9 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 	}
 
 	t.Run("Get", func(t *testing.T) {
+		trySkip(t)
 		t.Run("ExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -49,6 +57,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("NonExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -60,6 +69,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("ExpiredKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -79,6 +89,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("WithOptions", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -95,6 +106,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("ContextCancelled", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 
 			// 创建已取消的 context
@@ -115,7 +127,9 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 	})
 
 	t.Run("Set", func(t *testing.T) {
+		trySkip(t)
 		t.Run("NewKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -131,6 +145,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("OverwriteExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -151,6 +166,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("ZeroTTL", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -167,6 +183,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("NegativeTTL", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -176,6 +193,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("WithOptions", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -194,6 +212,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("ContextCancelled", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 
 			// 创建已取消的 context
@@ -207,7 +226,9 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 	})
 
 	t.Run("GetWithTTL", func(t *testing.T) {
+		trySkip(t)
 		t.Run("ExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -225,6 +246,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("NonExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -237,6 +259,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("TTLDecreasing", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -261,6 +284,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("NoExpiry", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -278,6 +302,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("WithOptions", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -296,7 +321,9 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 	})
 
 	t.Run("Delete", func(t *testing.T) {
+		trySkip(t)
 		t.Run("ExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -317,6 +344,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("NonExistingKey", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -326,6 +354,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("WithOptions", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -344,6 +373,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("ContextCancelled", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 
 			// 先设置值
@@ -361,7 +391,9 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 	})
 
 	t.Run("Clear", func(t *testing.T) {
+		trySkip(t)
 		t.Run("EmptyStore", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -371,6 +403,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("NonEmptyStore", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
@@ -401,6 +434,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("ContextCancelled", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 
 			// 创建已取消的 context
@@ -413,6 +447,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		})
 
 		t.Run("MultipleTimes", func(t *testing.T) {
+			trySkip(t)
 			s := newStore(t)
 			ctx := context.Background()
 
