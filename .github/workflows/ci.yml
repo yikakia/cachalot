@@ -29,3 +29,6 @@ jobs:
 
       - name: Test ristretto store module
         run: cd stores/ristretto && go test -v -race ./...
+
+      - name: Test integration
+        run: cd stores/storetests/integration && go test -v -race ./...
