@@ -21,7 +21,7 @@ func newValkeyClient(t *testing.T) valkey.Client {
 	ctx := context.Background()
 
 	opts := []testcontainers.ContainerCustomizer{
-		//testcontainers.WithLogger(tclog.TestLogger(t)),
+		testcontainers.WithLogger(noopLogger{}),
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
 				wait.ForLog("* Ready to accept connections"),
