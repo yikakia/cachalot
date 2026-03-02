@@ -140,7 +140,7 @@ type Decorator[T any] func(cache Cache[T], ob *telemetry.Observable) (Cache[T], 
 - Low-level：`cache.WithFactory(...)`。
 - Builder：`WithFactory(...)`。
 
-`WithFactory`/`WithCustomPlan` 与 staged feature（`codec/logic-expire/compression/type-adapter`）互斥，同时开启会报错。
+`WithFactory` 与 staged feature（`codec/logic-expire/compression/type-adapter`）互斥，同时开启会报错。
 
 ## 6. 选型建议
 

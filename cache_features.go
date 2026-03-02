@@ -90,15 +90,11 @@ func (b *Builder[T]) WithNilCacheWriteBackTTL(ttl time.Duration) *Builder[T] {
 	return b
 }
 
+// WithFactory 显式声明使用自定义装配计划，与 staged features 互斥。
 func (b *Builder[T]) WithFactory(factory cache.CacheFactory[T]) *Builder[T] {
 	b.factoryCustomized = true
 	b.factory = cache.WithFactory(factory)
 	return b
-}
-
-// WithCustomPlan 显式声明使用自定义装配计划，与 staged features 互斥。
-func (b *Builder[T]) WithCustomPlan(factory cache.CacheFactory[T]) *Builder[T] {
-	return b.WithFactory(factory)
 }
 
 func (b *Builder[T]) WithLogger(logger telemetry.Logger) *Builder[T] {
