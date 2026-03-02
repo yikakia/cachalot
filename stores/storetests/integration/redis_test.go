@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/yikakia/cachalot/core/cache"
 	store_redis "github.com/yikakia/cachalot/stores/redis"
@@ -17,13 +18,15 @@ import (
 
 func newRedisClient(t *testing.T) *redis.Client {
 	ctx := context.Background()
-	redisC, err := testcontainers.Run(
-		ctx, "redis:latest",
-		testcontainers.WithExposedPorts("6379/tcp"),
+
+	redisC, err := tcredis.Run(ctx, "redis:latest",
+		testcontainers.WithLogger(noopLogger{}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("6379/tcp"),
-			wait.ForLog("Ready to accept connections")),
+			wait.ForExposedPort(),
+			wait.ForLog("Ready to accept connections"),
+		),
 	)
+
 	testcontainers.CleanupContainer(t, redisC)
 	require.NoError(t, err)
 
