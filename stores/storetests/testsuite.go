@@ -43,7 +43,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("ExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 先设置值
 			err := s.Set(ctx, "key1", encodeSetValue("value1"), time.Minute, config.SetOptions...)
@@ -59,7 +59,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NonExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 获取不存在的 key
 			val, err := s.Get(ctx, "non-existing-key")
@@ -71,7 +71,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("ExpiredKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置一个很短 TTL 的值
 			// 存在一些实现 只支持秒级的精度
@@ -92,7 +92,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("WithOptions", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 先设置值
 			err := s.Set(ctx, "option-key", encodeSetValue("option-value"), time.Minute, config.SetOptions...)
@@ -111,11 +111,11 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			s := newStore(t)
 
 			// 创建已取消的 context
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			cancel()
 
 			// 先设置值
-			err := s.Set(context.Background(), "cancel-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
+			err := s.Set(t.Context(), "cancel-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
 			waitForCache(t, s)
 
@@ -132,7 +132,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NewKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置新 key
 			err := s.Set(ctx, "new-key", encodeSetValue("new-value"), time.Minute, config.SetOptions...)
@@ -148,7 +148,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("OverwriteExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置初始值
 			err := s.Set(ctx, "overwrite-key", encodeSetValue("old-value"), time.Minute, config.SetOptions...)
@@ -169,7 +169,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("ZeroTTL", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// TTL 为 0 表示永不过期
 			err := s.Set(ctx, "zero-ttl-key", encodeSetValue("value"), 0, config.SetOptions...)
@@ -186,7 +186,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NegativeTTL", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 负数 TTL 视为无效
 			err := s.Set(ctx, "negative-ttl-key", encodeSetValue("value"), -1*time.Second, config.SetOptions...)
@@ -196,7 +196,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("WithOptions", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 使用自定义 SetOption (Generic cache option) alongside config options
 			opts := append([]cache.CallOption{}, config.SetOptions...)
@@ -217,7 +217,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			s := newStore(t)
 
 			// 创建已取消的 context
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			cancel()
 
 			err := s.Set(ctx, "cancel-set-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
@@ -231,7 +231,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("ExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置值
 			err := s.Set(ctx, "ttl-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
@@ -249,7 +249,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NonExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 获取不存在的 key
 			val, ttl, err := s.GetWithTTL(ctx, "non-existing-ttl-key")
@@ -262,7 +262,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("TTLDecreasing", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置值
 			err := s.Set(ctx, "decreasing-ttl-key", encodeSetValue("value"), 5*time.Second, config.SetOptions...)
@@ -287,7 +287,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NoExpiry", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置永不过期的值 (TTL = 0)
 			err := s.Set(ctx, "no-expiry-key", encodeSetValue("value"), 0, config.SetOptions...)
@@ -305,7 +305,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("WithOptions", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置值
 			err := s.Set(ctx, "ttl-option-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
@@ -326,7 +326,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("ExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 先设置值
 			err := s.Set(ctx, "delete-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
@@ -347,7 +347,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NonExistingKey", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 删除不存在的 key 应该不报错（幂等操作）
 			err := s.Delete(ctx, "non-existing-delete-key")
@@ -357,7 +357,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("WithOptions", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 先设置值
 			err := s.Set(ctx, "delete-option-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
@@ -378,12 +378,12 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			s := newStore(t)
 
 			// 先设置值
-			err := s.Set(context.Background(), "cancel-delete-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
+			err := s.Set(t.Context(), "cancel-delete-key", encodeSetValue("value"), time.Minute, config.SetOptions...)
 			require.NoError(t, err)
 			waitForCache(t, s)
 
 			// 创建已取消的 context
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			cancel()
 			err = s.Delete(ctx, "cancel-delete-key")
 			require.Error(t, err)
@@ -396,7 +396,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("EmptyStore", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 空 store 调用 Clear 不应报错
 			err := s.Clear(ctx)
@@ -406,7 +406,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("NonEmptyStore", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 设置多个值
 			keys := []string{"clear-key1", "clear-key2", "clear-key3"}
@@ -439,7 +439,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 			s := newStore(t)
 
 			// 创建已取消的 context
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			cancel()
 
 			err := s.Clear(ctx)
@@ -450,7 +450,7 @@ func RunStoreTestSuites(t *testing.T, newStore func(*testing.T) cache.Store, opt
 		t.Run("MultipleTimes", func(t *testing.T) {
 			trySkip(t)
 			s := newStore(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// 多次调用 Clear 不应报错
 			for i := 0; i < 3; i++ {
