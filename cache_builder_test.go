@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/yikakia/cachalot/core/cache"
 	"github.com/yikakia/cachalot/core/codec"
+	"github.com/yikakia/cachalot/core/compress"
 	"github.com/yikakia/cachalot/core/telemetry"
 	"github.com/yikakia/cachalot/internal/mocks"
 	"go.uber.org/mock/gomock"
@@ -84,7 +85,7 @@ func TestBuilderCompressionWithBytesWithoutCodec(t *testing.T) {
 
 	builder, err := NewBuilder[[]byte]("compress-bytes", store)
 	require.NoError(t, err)
-	c, err := builder.WithCompression(codec.GzipCompressionCodec{}).Build()
+	c, err := builder.WithCompression(compress.GzipCompression{}).Build()
 	require.NoError(t, err)
 
 	require.NoError(t, c.Set(ctx, "k", plain, time.Minute))
@@ -127,7 +128,7 @@ func TestBuilderCompressionWithCodec(t *testing.T) {
 	require.NoError(t, err)
 	c, err := builder.
 		WithCodec(codec.JSONCodec{}).
-		WithCompression(codec.GzipCompressionCodec{}).
+		WithCompression(compress.GzipCompression{}).
 		Build()
 	require.NoError(t, err)
 
@@ -164,7 +165,7 @@ func TestBuilderLogicExpireWithCodecAndCompression(t *testing.T) {
 	c, err := builder.
 		WithLogicExpireEnabled(true).
 		WithCodec(codec.JSONCodec{}).
-		WithCompression(codec.GzipCompressionCodec{}).
+		WithCompression(compress.GzipCompression{}).
 		Build()
 	require.NoError(t, err)
 
@@ -202,7 +203,7 @@ func TestBuilderLogicExpireWithBytesAndCompressionWithoutCodec(t *testing.T) {
 	c, err := builder.
 		WithLogicExpireEnabled(true).
 		WithLogicExpireBytesAdapter(true).
-		WithCompression(codec.GzipCompressionCodec{}).
+		WithCompression(compress.GzipCompression{}).
 		Build()
 	require.NoError(t, err)
 
@@ -223,7 +224,7 @@ func TestBuilderLogicExpireWithBytesAndCompressionWithoutExplicitBytesAdapterSho
 	require.NoError(t, err)
 	_, err = builder.
 		WithLogicExpireEnabled(true).
-		WithCompression(codec.GzipCompressionCodec{}).
+		WithCompression(compress.GzipCompression{}).
 		Build()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "try use builder.WithLogicExpireBytesAdapter(true) to enable it")
@@ -236,7 +237,7 @@ func TestBuilderCompressionWithoutAdapterShouldFail(t *testing.T) {
 
 	builder, err := NewBuilder[string]("compress-no-adapter", store)
 	require.NoError(t, err)
-	_, err = builder.WithCompression(codec.GzipCompressionCodec{}).Build()
+	_, err = builder.WithCompression(compress.GzipCompression{}).Build()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no adapter configured")
 }
@@ -269,7 +270,7 @@ func TestBuilderCompressionWithCustomTypeAdapter(t *testing.T) {
 		WithTypeAdapter(func(next cache.Cache[[]byte], _ *telemetry.Observable) (cache.Cache[string], error) {
 			return &stringByteAdapter{Cache: next}, nil
 		}).
-		WithCompression(codec.GzipCompressionCodec{}).
+		WithCompression(compress.GzipCompression{}).
 		Build()
 	require.NoError(t, err)
 

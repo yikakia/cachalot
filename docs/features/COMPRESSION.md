@@ -5,7 +5,7 @@
 ## 1. API
 
 ```go
-builder.WithCompression(codec.GzipCompressionCodec{})
+builder.WithCompression(compress.GzipCompression{})
 ```
 
 - 公开调用方式是 Builder Decorator 风格。
