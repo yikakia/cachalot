@@ -7,6 +7,7 @@
 | 03_logical_expiry | 逻辑过期 + SWR | ⭐⭐ | 3 分钟 |
 | 04_observability | 日志 + 指标 | ⭐⭐ | 2 分钟 |
 | 05_advanced_multi_cache | 多级缓存 + WriteBack | ⭐⭐⭐ | 3 分钟 |
+| 06_remote_byte_path | Redis + JSON + Gzip + Logic Expire + Miss Loader | ⭐⭐⭐ | 4 分钟 |
 
 ## Run
 
@@ -16,4 +17,5 @@ cd examples/02_codec && go run main.go
 cd examples/03_logical_expiry && go run main.go
 cd examples/04_observability && go run .
 cd examples/05_advanced_multi_cache && go run .
+cd examples/06_remote_byte_path && REDIS_ADDR=127.0.0.1:6379 go run .
 ```
