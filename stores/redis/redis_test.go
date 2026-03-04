@@ -154,5 +154,5 @@ func TestStoreName_CustomName(t *testing.T) {
 func TestSet_RejectNonBytes(t *testing.T) {
 	s := newTestStore()
 	err := s.Set(context.Background(), "invalid-type", "value", time.Minute)
-	assert.True(t, errors.Is(err, cache.ErrTypeMissMatch))
+	assert.True(t, errors.Is(err, cache.ErrTypeMismatch))
 }

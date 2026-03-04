@@ -52,7 +52,7 @@ func (s *Store) Set(ctx context.Context, key string, val any, ttl time.Duration,
 
 	byteVal, ok := val.([]byte)
 	if !ok {
-		return fmt.Errorf("valkey.Set expects byte array: %s", cache.ErrTypeMissMatch)
+		return fmt.Errorf("valkey.Set expects byte array: %s", cache.ErrTypeMismatch)
 	}
 	var cmd valkey.Completed
 	cmdBuilder := s.client.B().Set().Key(key).Value(valkey.BinaryString(byteVal))

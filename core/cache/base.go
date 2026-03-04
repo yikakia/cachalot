@@ -31,7 +31,7 @@ func (w *BaseCache[T]) Get(ctx context.Context, key string, opts ...CallOption) 
 		return v, nil
 	}
 
-	return zero, fmt.Errorf("[BaseCache]:want:%T got:%T %w", zero, val, ErrTypeMissMatch)
+	return zero, fmt.Errorf("[BaseCache]:want:%T got:%T %w", zero, val, ErrTypeMismatch)
 }
 
 func (w *BaseCache[T]) Set(ctx context.Context, key string, val T, ttl time.Duration, opts ...CallOption) error {
@@ -49,7 +49,7 @@ func (w *BaseCache[T]) GetWithTTL(ctx context.Context, key string, opts ...CallO
 		return v, ttl, nil
 	}
 
-	return zero, 0, fmt.Errorf("[BaseCache]:want:%T got:%T %w", zero, val, ErrTypeMissMatch)
+	return zero, 0, fmt.Errorf("[BaseCache]:want:%T got:%T %w", zero, val, ErrTypeMismatch)
 }
 
 func (w *BaseCache[T]) Delete(ctx context.Context, key string, opts ...CallOption) error {

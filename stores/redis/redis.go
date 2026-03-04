@@ -56,7 +56,7 @@ func (s *Store) Set(ctx context.Context, key string, val any, ttl time.Duration,
 
 	raw, ok := val.([]byte)
 	if !ok {
-		return fmt.Errorf("want:[]byte got:%T %w", val, cache.ErrTypeMissMatch)
+		return fmt.Errorf("want:[]byte got:%T %w", val, cache.ErrTypeMismatch)
 	}
 
 	return s.client.Set(ctx, key, raw, ttl).Err()
