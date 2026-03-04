@@ -76,6 +76,7 @@ func (d *LogicTTLDecorator[T]) onExpire(ctx context.Context, key string, opts ..
 	val, err := d.loadFn(ctx, key, opts...)
 	if err != nil {
 		d.ob.Logger.ErrorContext(ctx, "[LogicTTLDecorator] load from source failed.", "key", key, "err", err)
+		return
 	}
 
 	err = d.Set(ctx, key, val, d.writeBackTTL, opts...)
