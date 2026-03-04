@@ -87,8 +87,8 @@ func (b *MultiBuilder[T]) WithErrorHandling(mode multicache.ErrorHandleMode) *Mu
 	return b
 }
 
-// WithSingleflightLoader LoaderFn 的 singleflight 封装 默认开启
-func (b *MultiBuilder[T]) WithSingleflightLoader(enabled bool) *MultiBuilder[T] {
+// WithSingleflight LoaderFn 的 singleflight 封装 默认开启
+func (b *MultiBuilder[T]) WithSingleflight(enabled bool) *MultiBuilder[T] {
 	b.singleFlight = enabled
 	return b
 }
@@ -103,8 +103,9 @@ func (b *MultiBuilder[T]) WithMetrics(metrics telemetry.Metrics) *MultiBuilder[T
 	return b
 }
 
-// 如果使用的策略不需要 LoaderFn 则可以通过 MultiBuilder.WithLoaderFnNotNil(false) 禁止 LoaderFn 的 nil 检查
-func (b *MultiBuilder[T]) WithLoaderFnNotNil(enabled bool) *MultiBuilder[T] {
+// WithRequiredLoader 设置是否必须提供 LoaderFn。
+// 当策略不依赖 LoaderFn 时可设置为 false。
+func (b *MultiBuilder[T]) WithRequiredLoader(enabled bool) *MultiBuilder[T] {
 	b.needLoaderFnNilCheck = enabled
 	return b
 }

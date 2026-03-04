@@ -11,7 +11,7 @@ import (
 )
 
 // 给 Get GetWithTTL 开启 singleflight 功能
-func (b *Builder[T]) WithSingleFlight(enable bool) *Builder[T] {
+func (b *Builder[T]) WithSingleflight(enable bool) *Builder[T] {
 	b.features.singleFlight = enable
 	return b
 }
