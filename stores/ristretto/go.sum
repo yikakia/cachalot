@@ -23,8 +23,8 @@ github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZV
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/yikakia/cachalot v0.0.0-20260224151656-fb38d15169a5 h1:AQnVtwVc4RXzS/t6Yk4qYOki6aVOEBReCTyWf+5t7qU=
-github.com/yikakia/cachalot v0.0.0-20260224151656-fb38d15169a5/go.mod h1:74wyhyC1peldBzMoCeiaLcyGATDEZ4MWRlrNIBZPg9U=
+github.com/yikakia/cachalot v0.0.0-20260304063019-bc71c2911b41 h1:+LMgVvggjMuogfOXTP+/vgGzPmzAYJIYSHfkkoJMtWE=
+github.com/yikakia/cachalot v0.0.0-20260304063019-bc71c2911b41/go.mod h1:74wyhyC1peldBzMoCeiaLcyGATDEZ4MWRlrNIBZPg9U=
 golang.org/x/sys v0.36.0 h1:KVRy2GtZBrk1cBYA7MKu5bEZFxQk4NIDV6RLVcC8o0k=
 golang.org/x/sys v0.36.0/go.mod h1:OgkHotnGiDImocRcuBABYBEXf8A9a87e/uXjp9XT3ks=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

@@ -5,7 +5,7 @@ go 1.25.7
 require (
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/stretchr/testify v1.11.1
-	github.com/yikakia/cachalot v0.0.0-20260224151656-fb38d15169a5
+	github.com/yikakia/cachalot v0.0.0-20260304063019-bc71c2911b41
 )
 
 require (
