@@ -24,9 +24,6 @@ jobs:
       - name: Test root module
         run: go test -v -race ./...
 
-      - name: Test core compress package
-        run: go test -v -race ./core/compress/...
-
       - name: Test redis store module
         run: cd stores/redis && go test -v -race ./...
 
