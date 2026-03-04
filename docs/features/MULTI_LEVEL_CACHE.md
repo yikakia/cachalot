@@ -77,7 +77,7 @@ const (
 - `singleflight loader = true`
 - `metrics = telemetry.NoopMetrics()`
 - `logger = telemetry.SlogLogger()`
-- 默认要求提供 `WithLoader(...)`（可用 `WithLoaderFnNotNil(false)` 关闭检查）
+- 默认要求提供 `WithLoader(...)`（可用 `WithRequiredLoader(false)` 关闭检查）
 
 默认策略含义：
 
@@ -129,4 +129,4 @@ const (
 - L1+L2 组合：`ristretto(local) + redis(remote)`。
 - 强一致需求高：使用 `Strict`，并谨慎设置回写策略。
 - 可用性优先：使用 `Tolerant`，并配合指标告警监控回写失败率。
-- 如果 `FetchPolicy` 不依赖 loader，记得 `WithLoaderFnNotNil(false)`。
+- 如果 `FetchPolicy` 不依赖 loader，记得 `WithRequiredLoader(false)`。

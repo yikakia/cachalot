@@ -99,7 +99,7 @@ type Metrics interface {
 
 `NewBuilder`（根目录 `cache.go`）默认行为：
 
-- 默认启用 `singleflight`（可用 `WithSingleFlight(false)` 关闭）。
+- 默认启用 `singleflight`（可用 `WithSingleflight(false)` 关闭）。
 - 默认 `metrics`：`telemetry.NoopMetrics()`。
 - 默认 `logger`：`telemetry.SlogLogger()`。
 - 默认观测装饰器：`decorator.NewObservableDecorator`。

@@ -8,7 +8,8 @@ import (
 // New 创建一个带类型的 Cache[T]
 // 它内部包裹了一个 Store，并在 Get/Set 时进行类型断言/转换
 //
-// cache 的扩展功能基于洋葱模型，从外到内是 decorator 包装 -> factory 对接 store 做类型断言
+// 调用时至少应传入 observable factory store 用于构建基本的缓存
+// name 参数保留用于可观测性/元数据扩展，当前不参与构建流程。
 func New[T any](name string, store Store, opts ...Option[T]) (Cache[T], error) {
 	cfg := &Configs[T]{}
 	for _, opt := range opts {

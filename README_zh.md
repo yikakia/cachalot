@@ -76,6 +76,7 @@ u, err := cache.Get(context.Background(), "user-1")
 - [examples/03_logical_expiry](examples/03_logical_expiry)
 - [examples/04_observability](examples/04_observability)
 - [examples/05_advanced_multi_cache](examples/05_advanced_multi_cache)
+- [examples/06_remote_byte_path](examples/06_remote_byte_path)
 
 ## 选择合适的 API
 
@@ -90,7 +91,7 @@ u, err := cache.Get(context.Background(), "user-1")
 
 - `WithCacheMissLoader`：未命中时回源。
 - `WithCacheMissDefaultWriteBackTTL`：回源成功后的默认回写 TTL。
-- `WithSingleFlight`：并发请求合并。
+- `WithSingleflight`：并发请求合并。
 - `WithCodec`：面向字节型存储的编解码。
 - `WithCompression`：字节阶段压缩/解压。
 - `WithLogicExpire*`：逻辑过期（stale-while-revalidate）。
@@ -100,7 +101,7 @@ u, err := cache.Get(context.Background(), "user-1")
 
 常用能力：
 
-- `WithLoader`：所有层都 miss 时的回源函数（默认对同 key 启用 singleflight，可通过 `WithSingleflightLoader(false)` 关闭）。
+- `WithLoader`：所有层都 miss 时的回源函数（默认对同 key 启用 singleflight，可通过 `WithSingleflight(false)` 关闭）。
 - `WithFetchPolicy`：自定义多级缓存的探测顺序与加载策略。
 - `WithWriteBack` / `WithWriteBackFilter`：自定义回写行为和目标层过滤规则。
 - `WithErrorHandling`：控制回写失败时的 strict / tolerant 策略。
@@ -129,8 +130,9 @@ Builder 默认装配顺序与装饰器执行模型见：
 
 - TODOs: [TODO.md](TODO.md)
 - 架构与装饰器链路：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- 常见问题（建设中）：[docs/FAQ.md](docs/FAQ.md)
-- 贡献指南（建设中）：[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- 常见问题：[docs/FAQ.md](docs/FAQ.md)
+- 贡献指南：[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- 选型决策矩阵：[docs/DECISION_MATRIX.md](docs/DECISION_MATRIX.md)
 
 ## 测试与 Mock
 

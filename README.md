@@ -76,6 +76,7 @@ For complete runnable examples, see [examples](examples):
 - [examples/03_logical_expiry](examples/03_logical_expiry)
 - [examples/04_observability](examples/04_observability)
 - [examples/05_advanced_multi_cache](examples/05_advanced_multi_cache)
+- [examples/06_remote_byte_path](examples/06_remote_byte_path)
 
 ## Choosing the Right API
 
@@ -90,7 +91,7 @@ Common options:
 
 - `WithCacheMissLoader`: Load from origin when a key is missed.
 - `WithCacheMissDefaultWriteBackTTL`: Default write-back TTL after loader returns successfully.
-- `WithSingleFlight`: Merge concurrent requests.
+- `WithSingleflight`: Merge concurrent requests.
 - `WithCodec`: Codec for byte-oriented stores.
 - `WithCompression`: Byte-stage compression/decompression.
 - `WithLogicExpire*`: Logical expiration (stale-while-revalidate).
@@ -100,7 +101,7 @@ Common options:
 
 Common options:
 
-- `WithLoader`: Fallback loader when all levels miss (singleflight for the same key is enabled by default; disable via `WithSingleflightLoader(false)`).
+- `WithLoader`: Fallback loader when all levels miss (singleflight for the same key is enabled by default; disable via `WithSingleflight(false)`).
 - `WithFetchPolicy`: Customize probing order and load strategy across levels.
 - `WithWriteBack` / `WithWriteBackFilter`: Control write-back behavior and target-level filtering rules.
 - `WithErrorHandling`: Control strict/tolerant behavior for write-back failures.
@@ -129,8 +130,9 @@ The default assembly order of Builder and the decorator execution model are desc
 
 - TODOs: [TODO.md](TODO.md)
 - Architecture and decorator chain: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- FAQ (under construction): [docs/FAQ.md](docs/FAQ.md)
-- Contributing Guide (under construction): [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- FAQ: [docs/FAQ.md](docs/FAQ.md)
+- Contributing Guide: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- Decision Matrix: [docs/DECISION_MATRIX.md](docs/DECISION_MATRIX.md)
 
 ## Testing and Mocks
 
