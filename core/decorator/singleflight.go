@@ -33,10 +33,10 @@ func (s *SingleflightDecorator[T]) Get(ctx context.Context, key string, opts ...
 
 func (s *SingleflightDecorator[T]) addTags(ctx context.Context, shared bool) {
 	tags := map[string]string{
-		"shared": "true",
+		"shared": "false",
 	}
 	if shared {
-		tags["shared"] = "false"
+		tags["shared"] = "true"
 	}
 
 	telemetry.AddCustomFields(ctx, tags)
