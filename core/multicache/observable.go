@@ -33,7 +33,9 @@ func (d *observableDecorator[T]) Get(ctx context.Context, key string, opts ...ca
 		evt.Result = internal.ResultFromErr(err)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
-		_ = d.ob.Metrics.Record(ctx, evt)
+		if recordErr := d.ob.Metrics.Record(ctx, evt); recordErr != nil {
+			d.ob.Logger.ErrorContext(ctx, "[observableDecorator.Get] Record Metrics Failed.", "err", recordErr.Error())
+		}
 	}()
 	ctx = telemetry.ContextWithEvent(ctx, evt)
 
@@ -49,7 +51,9 @@ func (d *observableDecorator[T]) Set(ctx context.Context, key string, val T, ttl
 	defer func() {
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
-		_ = d.ob.Metrics.Record(ctx, evt)
+		if recordErr := d.ob.Metrics.Record(ctx, evt); recordErr != nil {
+			d.ob.Logger.ErrorContext(ctx, "[observableDecorator.Set] Record Metrics Failed.", "err", recordErr.Error())
+		}
 	}()
 	ctx = telemetry.ContextWithEvent(ctx, evt)
 
@@ -65,7 +69,9 @@ func (d *observableDecorator[T]) Delete(ctx context.Context, key string, opts ..
 	defer func() {
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
-		_ = d.ob.Metrics.Record(ctx, evt)
+		if recordErr := d.ob.Metrics.Record(ctx, evt); recordErr != nil {
+			d.ob.Logger.ErrorContext(ctx, "[observableDecorator.Delete] Record Metrics Failed.", "err", recordErr.Error())
+		}
 	}()
 	ctx = telemetry.ContextWithEvent(ctx, evt)
 
@@ -81,7 +87,9 @@ func (d *observableDecorator[T]) Clear(ctx context.Context) (err error) {
 	defer func() {
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
-		_ = d.ob.Metrics.Record(ctx, evt)
+		if recordErr := d.ob.Metrics.Record(ctx, evt); recordErr != nil {
+			d.ob.Logger.ErrorContext(ctx, "[observableDecorator.Clear] Record Metrics Failed.", "err", recordErr.Error())
+		}
 	}()
 	ctx = telemetry.ContextWithEvent(ctx, evt)
 
@@ -98,7 +106,9 @@ func (d *observableDecorator[T]) FetchByLoader(ctx context.Context, key string, 
 		evt.Result = internal.ResultFromErr(err)
 		evt.Error = err
 		evt.Latency = time.Since(startTime)
-		_ = d.ob.Metrics.Record(ctx, evt)
+		if recordErr := d.ob.Metrics.Record(ctx, evt); recordErr != nil {
+			d.ob.Logger.ErrorContext(ctx, "[observableDecorator.FetchByLoader] Record Metrics Failed.", "err", recordErr.Error())
+		}
 	}()
 	ctx = telemetry.ContextWithEvent(ctx, evt)
 
